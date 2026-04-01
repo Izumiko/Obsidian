@@ -47,6 +47,18 @@ export default function ProfileContent() {
         name: string;
         color?: string;
       };
+      nextRank?: {
+        name: string;
+        color?: string;
+        minUpload: string;
+        minDownload: string;
+        minRatio: number;
+      };
+      progress?: {
+        upload: number;
+        download: number;
+        ratio: number;
+      };
     };
   } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

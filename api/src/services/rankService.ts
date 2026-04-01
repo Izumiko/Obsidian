@@ -118,7 +118,7 @@ export async function calculateUserRank(userId: string): Promise<UserRank> {
   }
 
   // Calculate progress towards next rank
-  let progress = { upload: 0, download: 0, ratio: 0 };
+  const progress = { upload: 0, download: 0, ratio: 0 };
 
   if (nextRank) {
     if (Number(nextRank.minUpload) > 0) {

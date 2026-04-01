@@ -45,7 +45,7 @@ export async function registerStatsRoutes(app: FastifyInstance) {
         totalUploadFormatted: formatBytes(totalUploaded),
       };
     } catch (error) {
-      app.log.error('Error fetching stats:', error);
+      app.log.error(error instanceof Error ? error : String(error));
       return reply.status(500).send({
         error: true,
         message: 'Failed to fetch site statistics',

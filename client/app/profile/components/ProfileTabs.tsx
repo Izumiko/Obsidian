@@ -84,7 +84,7 @@ export default function ProfileTabs({ children, profile }: ProfileTabsProps) {
           </div>
         )}
         {activeTab === 'ranks' && (
-          <RankTab profile={profile} />
+          <RankTab profile={profile ?? null} />
         )}
         {activeTab === 'activity' && (
           <RecentActivity />

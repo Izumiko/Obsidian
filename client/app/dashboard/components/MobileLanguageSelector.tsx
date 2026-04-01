@@ -1,8 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useI18n } from '@/app/hooks/useI18n';
 import { ChevronDown } from '@styled-icons/boxicons-regular/ChevronDown';
 
 interface MobileLanguageSelectorProps {
@@ -11,8 +9,6 @@ interface MobileLanguageSelectorProps {
 
 export default function MobileLanguageSelector({ currentLanguage = 'es' }: MobileLanguageSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const router = useRouter();
-  const { t } = useI18n();
 
   const languages = [
     { code: 'es', name: 'Español', flag: '🇪🇸' },
