@@ -69,7 +69,7 @@ export default function RanksClient() {
         const statusData = await statusRes.json();
         setRankSystemEnabled(statusData.enabled);
       }
-    } catch (err) {
+    } catch {
       setError('Failed to fetch ranks');
     } finally {
       setLoading(false);
@@ -118,8 +118,8 @@ export default function RanksClient() {
       setEditingRank(null);
       resetForm();
       fetchRanks();
-    } catch (err: any) {
-      setError(err.message || 'Failed to save rank');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save rank');
     }
   };
 
@@ -140,8 +140,8 @@ export default function RanksClient() {
       }
 
       fetchRanks();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete rank');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete rank');
     }
   };
 
@@ -190,7 +190,7 @@ export default function RanksClient() {
         const data = await res.json();
         setRankSystemEnabled(data.enabled);
       }
-    } catch (err) {
+    } catch {
       setError('Failed to toggle rank system');
     }
   };

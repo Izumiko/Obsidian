@@ -1,6 +1,5 @@
 'use client';
 
-import { useI18n } from '../../hooks/useI18n';
 import { Award } from '@styled-icons/boxicons-regular/Award';
 import { TrendingUp } from '@styled-icons/boxicons-regular/TrendingUp';
 
@@ -38,8 +37,6 @@ interface RankTabProps {
 }
 
 export default function RankTab({ profile }: RankTabProps) {
-  const { t } = useI18n();
-
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B';
     const k = 1024;
