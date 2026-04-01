@@ -175,14 +175,20 @@ export default function RanksClient() {
     const token = localStorage.getItem('authToken');
     if (!token) return;
 
+    const newEnabled = !rankSystemEnabled;
     try {
       const res = await fetch(`${API_BASE_URL}/admin/ranks/toggle`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ enabled: newEnabled }),
       });
 
       if (res.ok) {
-        setRankSystemEnabled(!rankSystemEnabled);
+        const data = await res.json();
+        setRankSystemEnabled(data.enabled);
       }
     } catch (err) {
       setError('Failed to toggle rank system');

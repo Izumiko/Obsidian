@@ -15,7 +15,7 @@ const prisma = new PrismaClient();
 // Get all ranks
 export async function listRanksHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  if (!user || !['ADMIN', 'OWNER', 'FOUNDER'].includes(user.role)) {
     return reply.status(403).send({ error: 'Admin access required' });
   }
 
@@ -31,7 +31,7 @@ export async function listRanksHandler(request: FastifyRequest, reply: FastifyRe
 // Create a new rank
 export async function createRankHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  if (!user || !['ADMIN', 'OWNER', 'FOUNDER'].includes(user.role)) {
     return reply.status(403).send({ error: 'Admin access required' });
   }
 
@@ -68,7 +68,7 @@ export async function createRankHandler(request: FastifyRequest, reply: FastifyR
 // Update a rank
 export async function updateRankHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  if (!user || !['ADMIN', 'OWNER', 'FOUNDER'].includes(user.role)) {
     return reply.status(403).send({ error: 'Admin access required' });
   }
 
@@ -114,7 +114,7 @@ export async function updateRankHandler(request: FastifyRequest, reply: FastifyR
 // Delete a rank
 export async function deleteRankHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  if (!user || !['ADMIN', 'OWNER', 'FOUNDER'].includes(user.role)) {
     return reply.status(403).send({ error: 'Admin access required' });
   }
 
@@ -142,7 +142,7 @@ export async function deleteRankHandler(request: FastifyRequest, reply: FastifyR
 // Get rank by ID
 export async function getRankHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  if (!user || !['ADMIN', 'OWNER', 'FOUNDER'].includes(user.role)) {
     return reply.status(403).send({ error: 'Admin access required' });
   }
 
@@ -168,7 +168,7 @@ export async function getRankHandler(request: FastifyRequest, reply: FastifyRepl
 // Get rank system status
 export async function getRankSystemStatusHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  if (!user || !['ADMIN', 'OWNER', 'FOUNDER'].includes(user.role)) {
     return reply.status(403).send({ error: 'Admin access required' });
   }
 
@@ -184,7 +184,7 @@ export async function getRankSystemStatusHandler(request: FastifyRequest, reply:
 // Toggle rank system
 export async function toggleRankSystemHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'OWNER')) {
+  if (!user || !['ADMIN', 'OWNER', 'FOUNDER'].includes(user.role)) {
     return reply.status(403).send({ error: 'Admin access required' });
   }
 

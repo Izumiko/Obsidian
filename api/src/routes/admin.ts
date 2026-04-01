@@ -77,11 +77,12 @@ export async function registerAdminRoutes(app: FastifyInstance) {
   app.get('/admin/notifications', { preHandler: requireAuth }, getAdminNotificationsHandler);
 
   // Rank management routes
+  // Static routes must come before parameterized routes to avoid being shadowed by :id
+  app.get('/admin/ranks/status', { preHandler: requireAuth }, getRankSystemStatusHandler);
+  app.post('/admin/ranks/toggle', { preHandler: requireAuth }, toggleRankSystemHandler);
   app.get('/admin/ranks', { preHandler: requireAuth }, listRanksHandler);
   app.post('/admin/ranks', { preHandler: requireAuth }, createRankHandler);
   app.get('/admin/ranks/:id', { preHandler: requireAuth }, getRankHandler);
   app.put('/admin/ranks/:id', { preHandler: requireAuth }, updateRankHandler);
   app.delete('/admin/ranks/:id', { preHandler: requireAuth }, deleteRankHandler);
-  app.get('/admin/ranks/status', { preHandler: requireAuth }, getRankSystemStatusHandler);
-  app.post('/admin/ranks/toggle', { preHandler: requireAuth }, toggleRankSystemHandler);
 } 
