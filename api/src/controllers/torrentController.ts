@@ -258,7 +258,7 @@ export async function uploadTorrentHandler(request: FastifyRequest, reply: Fasti
 
 
   // VALIDATION: No emojis in provided torrent name
-  let hasEmoji = false;
+  let hasEmoji;
   try {
     const emojiDetector = new RegExp('\\p{Extended_Pictographic}', 'u');
     hasEmoji = emojiDetector.test(String(name));

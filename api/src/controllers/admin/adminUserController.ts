@@ -4,7 +4,7 @@ import { createNotification } from '../../services/notificationService.js';
 import crypto from 'crypto';
 import { sendEmail, getFrontendBaseUrl } from '../../utils/sendEmail.js';
 import { getVerificationEmail } from '../../utils/emailTemplates/verificationEmail.js';
-import { getResetPasswordEmail } from '../../utils/emailTemplates/resetPasswordEmail.js';
+// import { getResetPasswordEmail } from '../../utils/emailTemplates/resetPasswordEmail.js';
 import { randomUUID } from 'crypto';
 import { getPeerBanEmail } from '../../utils/emailTemplates/peerBanEmail.js';
 import { getUserBanEmail, getUserUnbanEmail } from '../../utils/emailTemplates/userBanEmail.js';
@@ -492,7 +492,7 @@ export async function updateUserEmailHandler(request: FastifyRequest, reply: Fas
   const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
   // Send security email to old email
   if (oldUser.email) {
-    const { text, html } = getResetPasswordEmail({ username: oldUser.username, link: resetLink });
+    // const { text, html } = getResetPasswordEmail({ username: oldUser.username, link: resetLink });
     const securityText = `Your email was changed from ${oldUser.email} to ${email} by an admin.\nIf you did not request this, you can reset your password here: ${resetLink}`;
     const securityHtml = `<div style='font-family:sans-serif;color:#222;'><h2>Security Alert</h2><p>Your email was changed from <b>${oldUser.email}</b> to <b>${email}</b> by an admin.</p><p>If you did not request this, you can reset your password here:</p><p style='margin:32px 0;'><a href='${resetLink}' style='background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;'>Reset Password</a></p></div>`;
     await sendEmail({ to: oldUser.email, subject: 'Security Alert: Your email was changed', text: securityText, html: securityHtml });

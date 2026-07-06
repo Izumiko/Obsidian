@@ -100,6 +100,6 @@ export async function updateBookmarkNoteHandler(request: FastifyRequest, reply: 
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   const { torrentId } = request.params as any;
   const { note } = request.body as any;
-  const bookmark = await prisma.bookmark.updateMany({ where: { userId: user.id, torrentId }, data: { note } });
+  const _bookmark = await prisma.bookmark.updateMany({ where: { userId: user.id, torrentId }, data: { note } });
   return reply.send({ success: true });
 } 

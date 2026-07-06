@@ -100,7 +100,7 @@ export async function getCategorySourcesPublicHandler(request: FastifyRequest, r
       orderBy: { order: 'asc' },
     });
 
-    let inherited: { id: string; name: string; isActive: boolean; order: number }[] = [];
+    const inherited: { id: string; name: string; isActive: boolean; order: number }[] = [];
     if (category.parentId) {
       const ownIds = new Set(ownLinks.map((l) => l.sourceId));
       let currentParentId: string | null = category.parentId;

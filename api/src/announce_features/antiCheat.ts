@@ -198,9 +198,9 @@ export async function checkAnnounceRateLimit(config: any, params: any): Promise<
   const cooldown = config.announceCooldown ?? 1800; // seconds
   const now = new Date();
   // Find or create AnnounceRateLimit record for this user
-  let record = await prisma.announceRateLimit.findFirst({ where: { userId } });
+  const record = await prisma.announceRateLimit.findFirst({ where: { userId } });
   if (!record) {
-    record = await prisma.announceRateLimit.create({
+    await prisma.announceRateLimit.create({
       data: { userId, lastCheckedAt: now, announceCount: 1 }
     });
     return null;

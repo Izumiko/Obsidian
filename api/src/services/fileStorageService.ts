@@ -103,7 +103,7 @@ export async function saveFile({
         storageKey: '', // Not needed for DB, can use id
         size: buffer.length,
         mimeType,
-        data: buffer
+        data: new Uint8Array(buffer)
       }
     });
     // Set storageKey to id for easy lookup
