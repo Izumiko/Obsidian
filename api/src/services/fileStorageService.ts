@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { PrismaClient, UploadedFile, Config } from '@prisma/client';
+import { PrismaClient, UploadedFile, Config } from '../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
 import { randomUUID } from 'crypto';
 import {
   S3Client,
@@ -9,7 +10,11 @@ import {
   DeleteObjectCommand
 } from '@aws-sdk/client-s3';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
+
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 
 export type FileType = 'torrent' | 'nfo' | 'image' | 'avatar' | 'other';

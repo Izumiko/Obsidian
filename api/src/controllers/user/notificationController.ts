@@ -1,7 +1,12 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { getUserNotifications, markNotificationRead, markAllNotificationsRead } from '../../services/notificationService.js';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { PrismaClient } from '../../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 export async function getUserNotificationsHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;

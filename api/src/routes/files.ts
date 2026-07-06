@@ -1,9 +1,13 @@
 import { FastifyInstance } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { getConfig } from '../services/configService.js';
 import { getFile } from '../services/fileStorageService.js';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 export async function registerFileRoutes(app: FastifyInstance) {
   // Servir archivos subidos independientemente del storage (DB, S3, LOCAL)

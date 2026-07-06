@@ -4,9 +4,13 @@
  * - Ensures sources exist (created if missing)
  * - Links sources to categories as own (non-inherited) with stable order
  */
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../src/generated/prisma/client';
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 const categoriesWithSources: Record<string, string[]> = {
   Movies: ['BluRay', 'WebDL', 'HDRip', 'DVDRip', 'BRRip', 'BDRip'],

@@ -1,7 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import parseTorrent from 'parse-torrent';
 import bencode from 'bencode';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
 import { requireTorrentApproval } from '../services/configService.js';
 import { saveFile, getFile } from '../services/fileStorageService.js';
 import { getConfig } from '../services/configService.js';
@@ -86,7 +87,10 @@ export async function createMagnetTokenHandler(request: FastifyRequest, reply: F
   });
 }
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 // Helper function to detect the correct protocol (HTTP/HTTPS) from request
 function getBaseUrlFromRequest(request: FastifyRequest): string {

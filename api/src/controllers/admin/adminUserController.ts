@@ -1,5 +1,4 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { createNotification } from '../../services/notificationService.js';
 import crypto from 'crypto';
 import { sendEmail, getFrontendBaseUrl } from '../../utils/sendEmail.js';
@@ -10,7 +9,13 @@ import { getPeerBanEmail } from '../../utils/emailTemplates/peerBanEmail.js';
 import { getUserBanEmail, getUserUnbanEmail } from '../../utils/emailTemplates/userBanEmail.js';
 import { getPromotionEmail, getDemotionEmail } from '../../utils/emailTemplates/promotionEmail.js';
 import { getRssBannedEmail, getRssUnbannedEmail } from '../../utils/emailTemplates/rssBanEmail.js';
-const prisma = new PrismaClient();
+import { PrismaClient } from '../../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 // Helper to convert BigInt fields to strings recursively
 function convertBigInts(obj: any): any {

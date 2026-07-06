@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import bencode from 'bencode';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
 import { getActivePeers, getSeederLeecherCounts, getCompletedCount } from '../announce_features/peerList.js';
 import { updateUserRatio, isUserBelowMinRatio } from '../announce_features/ratio.js';
 import { awardBonusPoints } from '../announce_features/bonusPoints.js';
@@ -9,7 +10,10 @@ import { getConfig } from '../services/configService.js';
 import { checkClientWhitelistBlacklist, checkClientFingerprint, checkGhostLeeching, checkCheatingClient, checkIpAbuse, checkAnnounceRate, checkAnnounceRateLimit, checkInvalidStats, isPeerBanned } from '../announce_features/antiCheat.js';
 import { extractRealClientIP, isCloudflareRequest, getCloudflareCountry } from '../utils/ipExtraction.js';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 type Peer = { ip: string; port: number; peerId: string };
 

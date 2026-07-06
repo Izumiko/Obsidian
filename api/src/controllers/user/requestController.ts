@@ -1,10 +1,14 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
 import { createNotification } from '../../services/notificationService.js';
 import { getRequestFilledEmail } from '../../utils/emailTemplates/requestFilledEmail.js';
 import { convertBigInts } from '../commentController.js';
+import { PrismaClient } from '../../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 // Helper: Build threaded comments for requests (up to 4 levels, with hasMoreReplies)
 async function buildThreadedCommentsForRequest(comments: any[], opUserId: string, level = 0): Promise<any[]> {

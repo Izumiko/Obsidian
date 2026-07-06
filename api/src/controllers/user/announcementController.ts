@@ -1,6 +1,11 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+import { PrismaClient } from '../../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
+
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 export async function listAnnouncementsHandler(request: FastifyRequest, reply: FastifyReply) {
   const { pinned, visible, page = 1, limit = 20 } = (request.query as any) || {};

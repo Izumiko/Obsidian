@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/authMiddleware.js';
-import { PrismaClient } from '@prisma/client';
 import { 
   uploadTorrentHandler, 
   listTorrentsHandler, 
@@ -27,8 +26,13 @@ import {
   deleteCommentHandler,
   voteCommentHandler
 } from '../controllers/commentController.js';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 export async function registerTorrentRoutes(app: FastifyInstance) {
   app.post('/torrent/upload', { preHandler: requireAuth }, uploadTorrentHandler); //DONE

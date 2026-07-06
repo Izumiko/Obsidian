@@ -1,7 +1,11 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../generated/prisma/client.js';
+import { PrismaPg } from "@prisma/adapter-pg";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 export async function updateTorrentHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
