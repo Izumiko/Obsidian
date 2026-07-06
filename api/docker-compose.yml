@@ -1,0 +1,9 @@
+services:
+  obsidian-api:
+    ports:
+      - '8888:8888'
+    volumes:
+      # Change the next line to your location of storage
+      - ./uploads:/app/uploads
+    image: 'izumiko/obsidian-api:latest'
+    restart: always
