@@ -1,5 +1,4 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import argon2 from 'argon2';
 import { PrismaClient, UserRole } from '@prisma/client';
 import { getConfig, isFirstUser } from '../services/configService.js';
 import jwt from 'jsonwebtoken';
@@ -12,6 +11,7 @@ import path from 'path';
 import { getDisableAccountEmail } from '../utils/emailTemplates/disableAccountEmail.js';
 import { createNotification } from '../services/notificationService.js';
 import { calculateUserRank } from '../services/rankService.js';
+import { hashPassword, verifyPassword } from '../utils/password.js';
 
 function normalizeS3Config(config: any) {
   return {
@@ -78,7 +78,7 @@ export async function registerHandler(request: FastifyRequest, reply: FastifyRep
   }
 
   // Hash password
-  const passwordHash = await argon2.hash(password);
+  const passwordHash = await hashPassword(password);
 
   // Assign OWNER role to first user, USER otherwise
   const first = await isFirstUser();
@@ -168,7 +168,7 @@ export async function loginHandler(request: FastifyRequest, reply: FastifyReply)
   if (!user) {
     return reply.status(401).send({ error: 'Invalid credentials.' });
   }
-  const valid = await argon2.verify(user.passwordHash, password);
+  const valid = await verifyPassword(user.passwordHash, password);
   if (!valid) {
     return reply.status(401).send({ error: 'Invalid credentials.' });
   }
@@ -307,7 +307,7 @@ export async function resetPasswordHandler(request: FastifyRequest, reply: Fasti
   // Mark token as used
   await prisma.passwordResetToken.update({ where: { token }, data: { used: true } });
   // Update user password
-  const passwordHash = await argon2.hash(password);
+  const passwordHash = await hashPassword(password);
   await prisma.user.update({ where: { id: record.userId }, data: { passwordHash } });
   return reply.send({ success: true });
 }
@@ -362,7 +362,7 @@ export async function updateProfileHandler(request: FastifyRequest, reply: Fasti
   }
   
   try {
-    const passwordHash = await argon2.hash(password);
+    const passwordHash = await hashPassword(password);
     const updated = await prisma.user.update({ 
       where: { id: user.id }, 
       data: { passwordHash } 
