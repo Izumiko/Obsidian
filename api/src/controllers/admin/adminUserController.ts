@@ -10,18 +10,7 @@ import { getUserBanEmail, getUserUnbanEmail } from '../../utils/emailTemplates/u
 import { getPromotionEmail, getDemotionEmail } from '../../utils/emailTemplates/promotionEmail.js';
 import { getRssBannedEmail, getRssUnbannedEmail } from '../../utils/emailTemplates/rssBanEmail.js';
 import { prisma } from '../../lib/prisma.js';
-
-// Helper to convert BigInt fields to strings recursively
-function convertBigInts(obj: any): any {
-  if (Array.isArray(obj)) {
-    return obj.map(convertBigInts);
-  } else if (obj && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => [k, typeof v === 'bigint' ? v.toString() : convertBigInts(v)])
-    );
-  }
-  return obj;
-}
+import { convertBigInts } from '../../lib/serialization.js';
 
 function isAdminOrOwner(user: any) {
   return user && (user.role === 'ADMIN' || user.role === 'OWNER' || user.role === 'FOUNDER');

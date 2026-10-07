@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import parseTorrent from 'parse-torrent';
 import bencode from 'bencode';
 import { prisma } from '../lib/prisma.js';
+import { convertBigInts } from '../lib/serialization.js';
 import { requireTorrentApproval } from '../services/configService.js';
 import { saveFile, getFile } from '../services/fileStorageService.js';
 import { getConfig } from '../services/configService.js';
@@ -93,22 +94,6 @@ function getBaseUrlFromRequest(request: FastifyRequest): string {
                    (request.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
   const host = request.headers.host || 'localhost:3001';
   return `${protocol}://${host}`;
-}
-
-// Helper to convert BigInt fields to strings recursively
-function convertBigInts(obj: any): any {
-  // Preserve Date instances so they serialize correctly as ISO strings
-  if (obj instanceof Date) {
-    return obj;
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(convertBigInts);
-  } else if (obj && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => [k, typeof v === 'bigint' ? v.toString() : convertBigInts(v)])
-    );
-  }
-  return obj;
 }
 
 // Helper to normalize S3 config fields (null -> undefined)

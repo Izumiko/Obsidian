@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../lib/prisma.js';
+import { convertBigInts } from '../lib/serialization.js';
 
 // Helper: Build threaded comments up to 4 levels, but at the limit, do not fetch further replies
 async function buildThreadedComments(comments: any[], opUserId: string, currentUserId: string | null, level = 0): Promise<any[]> {
@@ -49,21 +50,7 @@ async function buildThreadedComments(comments: any[], opUserId: string, currentU
   );
 }
 
-// Helper to convert BigInt fields to strings recursively
-export function convertBigInts(obj: any): any {
-  if (Array.isArray(obj)) {
-    return obj.map(convertBigInts);
-  } else if (obj && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => {
-        if (typeof v === 'bigint') return [k, v.toString()];
-        if (v instanceof Date) return [k, v.toISOString()];
-        return [k, convertBigInts(v)];
-      })
-    );
-  }
-  return obj;
-}
+export { convertBigInts };
 
 // GET /torrent/:id/comments
 export async function listCommentsForTorrentHandler(request: FastifyRequest, reply: FastifyReply) {

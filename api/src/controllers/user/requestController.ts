@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { createNotification } from '../../services/notificationService.js';
 import { getRequestFilledEmail } from '../../utils/emailTemplates/requestFilledEmail.js';
-import { convertBigInts } from '../commentController.js';
+import { convertBigInts } from '../../lib/serialization.js';
 import { prisma } from '../../lib/prisma.js';
 
 // Helper: Build threaded comments for requests (up to 4 levels, with hasMoreReplies)
