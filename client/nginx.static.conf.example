@@ -1,0 +1,60 @@
+# Obsidian Tracker — nginx serving config for the statically exported Next.js client.
+#
+# Build the client first:  cd client && next build   (produces client/out/)
+# Then point `root` at the generated `out` directory. No `next start` is needed.
+#
+# Dynamic routes with unbounded params (torrents, users, wiki, announcements,
+# invite codes, categories) are exported as ONE placeholder shell each
+# (e.g. /torrent/_placeholder/index.html). The shell reads the real id from the
+# browser URL at runtime and fetches its data client-side. The blocks below use
+# try_files to fall back to those shells so any id resolves.
+
+server {
+    listen 80;
+    server_name example.com;
+
+    # Absolute path to client/out on this server.
+    root /var/www/obsidian-client/out;
+    index index.html;
+
+    # Hashed Next.js build assets are immutable.
+    location /_next/static/ {
+        try_files $uri =404;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location /_next/ {
+        try_files $uri =404;
+    }
+
+    # --- Dynamic routes: real path first, else the placeholder shell ---
+    location /torrent/ {
+        try_files $uri $uri/ /torrent/_placeholder/index.html;
+    }
+
+    location /user/ {
+        try_files $uri $uri/ /user/_placeholder/index.html;
+    }
+
+    location /wiki/ {
+        try_files $uri $uri/ /wiki/_placeholder/index.html;
+    }
+
+    location /announcements/ {
+        try_files $uri $uri/ /announcements/_placeholder/index.html;
+    }
+
+    location /auth/signup/ {
+        try_files $uri $uri/ /auth/signup/_placeholder/index.html;
+    }
+
+    location ~ ^/category/[^/]+/torrents/ {
+        try_files $uri $uri/ /category/_placeholder/torrents/index.html;
+    }
+
+    # Everything else is a static page exported as <path>/index.html.
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
