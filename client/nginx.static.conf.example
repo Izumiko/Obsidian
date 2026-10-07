@@ -16,6 +16,7 @@ server {
     # Absolute path to client/out on this server.
     root /var/www/obsidian-client/out;
     index index.html;
+    error_page 404 /404.html;
 
     # Hashed Next.js build assets are immutable.
     location /_next/static/ {

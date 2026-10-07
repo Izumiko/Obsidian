@@ -9,7 +9,7 @@ export default function TorrentDetailClientShell() {
   let id = typeof params?.id === 'string' ? params.id : (Array.isArray(params?.id) ? params.id[0] : '');
   if (!id || id === '_placeholder') {
     const seg = pathname.split('/').filter(Boolean);
-    id = seg[1] || '';
+    id = decodeURIComponent(seg[1] || '');
   }
   if (!id) return null;
   return (

@@ -5,7 +5,7 @@
 
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import es from '@/app/locales/es.json';
 import en from '@/app/locales/en.json';
 import zh from '@/app/locales/zh.json';
@@ -48,12 +48,18 @@ function getByKeyPath(obj: unknown, keyPath: string): unknown {
 // Client-side translation hook using cookie language and bundled resources
 export function useI18n(initialLanguage?: string) {
   const provided = useI18nResources();
-  const language = useMemo(() => {
-    // Use initial language if provided (from server), otherwise detect from cookie
+  const [language, setLanguage] = useState<string>(() => {
     if (initialLanguage && isLang(initialLanguage)) {
       return initialLanguage;
     }
-    return getCookieLanguage();
+    return 'es';
+  });
+  useEffect(() => {
+    if (initialLanguage && isLang(initialLanguage)) {
+      setLanguage(initialLanguage);
+      return;
+    }
+    setLanguage(getCookieLanguage());
   }, [initialLanguage]);
   const resources: Resources = useMemo(() => {
     if (provided) return provided as Resources;
