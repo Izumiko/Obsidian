@@ -1,0 +1,507 @@
+// use prisma-8
+// Contract inferred from the live database schema. Edit as needed, then run `prisma contract emit`.
+
+namespace public {
+  model Category {
+    id              String           @id(map: "Category_pkey")
+    name            String
+    description     String?
+    icon            String?
+    order           Int?
+    parentId        String?
+    inheritSources  Boolean          @default(true)
+    categorySources CategorySource[]
+    requests        Request[]
+    torrents        Torrent[]
+    parent          Category?        @relation(name: "Category_parentId_fkey", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Category_parentId_fkey", index: false)
+    categories      Category[]       @relation(name: "Category_parentId_fkey")
+
+    @@index([name], map: "Category_name_key", unique: true)
+  }
+
+  model UploadedFile {
+    id         String       @id(map: "UploadedFile_pkey")
+    _type      String       @map("type")
+    ext        String
+    storageKey String
+    size       Int
+    mimeType   String
+    data       Bytes?
+    createdAt  Timestamp(3) @default(now())
+    updatedAt  Timestamp(3)
+    torrent    Torrent?
+    user       User?
+  }
+
+  model User {
+    id                        String                   @id(map: "User_pkey")
+    email                     String
+    passwordHash              String
+    username                  String
+    role                      pg.enum(UserRole)        @default("USER")
+    status                    pg.enum(UserStatus)      @default("ACTIVE")
+    upload                    BigInt                   @default(0)
+    download                  BigInt                   @default(0)
+    inviteCode                String?
+    emailVerified             Boolean                  @default(false)
+    createdAt                 Timestamp(3)             @default(now())
+    updatedAt                 Timestamp(3)
+    passkey                   String
+    bonusPoints               Int                      @default(0)
+    rssEnabled                Boolean                  @default(true)
+    rssToken                  String?
+    avatarFileId              String?
+    avatarUrl                 String?
+    allowEmailNotifications   Boolean                  @default(true)
+    preferredLanguage         String?
+    publicProfile             Boolean                  @default(false)
+    announces                 Announce[]
+    announceRateLimits        AnnounceRateLimit[]
+    announcements             Announcement[]
+    bookmarks                 Bookmark[]
+    comments                  Comment[]
+    commentVotes              CommentVote[]
+    downloadTokens            DownloadToken[]
+    emailVerificationTokens   EmailVerificationToken[]
+    hitAndRuns                HitAndRun[]
+    passwordResetTokens       PasswordResetToken[]
+    peerBans                  PeerBan[]
+    torrentVotes              TorrentVote[]
+    userActivities            UserActivity[]
+    invites                   Invite[]                 @relation(name: "Invite_createdById_fkey")
+    invitesInvite             Invite[]                 @relation(name: "Invite_usedById_fkey")
+    notifications             Notification[]           @relation(name: "Notification_adminId_fkey")
+    notificationsNotification Notification[]           @relation(name: "Notification_userId_fkey")
+    requests                  Request[]                @relation(name: "Request_filledById_fkey")
+    requestsRequest           Request[]                @relation(name: "Request_userId_fkey")
+    torrents                  Torrent[]                @relation(name: "Torrent_rejectedById_fkey")
+    torrentsTorrent           Torrent[]                @relation(name: "Torrent_uploaderId_fkey")
+    avatarFile                UploadedFile?            @relation(fields: [avatarFileId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "User_avatarFileId_fkey")
+    wikiPages                 WikiPage[]               @relation(name: "WikiPage_createdById_fkey")
+    wikiPagesWikiPage         WikiPage[]               @relation(name: "WikiPage_updatedById_fkey")
+
+    @@index([avatarFileId], map: "User_avatarFileId_key", unique: true)
+    @@index([email], map: "User_email_key", unique: true)
+    @@index([passkey], map: "User_passkey_key", unique: true)
+    @@index([rssToken], map: "User_rssToken_idx")
+    @@index([rssToken], map: "User_rssToken_key", unique: true)
+    @@index([username], map: "User_username_key", unique: true)
+  }
+
+  model Torrent {
+    id              String          @id(map: "Torrent_pkey")
+    infoHash        String
+    name            String
+    description     String?
+    uploaderId      String
+    filePath        String
+    size            BigInt
+    isApproved      Boolean         @default(false)
+    createdAt       Timestamp(3)    @default(now())
+    updatedAt       Timestamp(3)
+    nfoPath         String?
+    categoryId      String
+    posterFileId    String?
+    posterUrl       String?
+    isRejected      Boolean         @default(false)
+    rejectedAt      Timestamp(3)?
+    rejectedById    String?
+    rejectionReason String?
+    tags            String[]?       @default([]) @noCheck(elementNotNull)
+    freeleech       Boolean         @default(false)
+    isAnonymous     Boolean         @default(false)
+    announces       Announce[]
+    bookmarks       Bookmark[]
+    comments        Comment[]
+    downloadTokens  DownloadToken[]
+    hitAndRuns      HitAndRun[]
+    requests        Request[]
+    torrentVotes    TorrentVote[]
+    category        Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Torrent_categoryId_fkey", index: false)
+    posterFile      UploadedFile?   @relation(fields: [posterFileId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Torrent_posterFileId_fkey")
+    rejectedBy      User?           @relation(name: "Torrent_rejectedById_fkey", fields: [rejectedById], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Torrent_rejectedById_fkey", index: false)
+    uploader        User            @relation(name: "Torrent_uploaderId_fkey", fields: [uploaderId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Torrent_uploaderId_fkey", index: false)
+
+    @@index([infoHash], map: "Torrent_infoHash_key", unique: true)
+    @@index([posterFileId], map: "Torrent_posterFileId_key", unique: true)
+  }
+
+  model Announce {
+    id             String       @id(map: "Announce_pkey")
+    torrentId      String
+    userId         String?
+    peerId         String
+    ip             String
+    port           Int
+    uploaded       BigInt       @default(0)
+    downloaded     BigInt       @default(0)
+    left           BigInt       @default(0)
+    event          String?
+    lastAnnounceAt Timestamp(3) @default(now())
+    torrent        Torrent      @relation(fields: [torrentId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Announce_torrentId_fkey", index: false)
+    user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Announce_userId_fkey", index: false)
+
+    @@index([torrentId, peerId], map: "Announce_torrentId_peerId_key", unique: true)
+  }
+
+  model AnnounceRateLimit {
+    id            String        @id(map: "AnnounceRateLimit_pkey")
+    userId        String
+    lastCheckedAt Timestamp(3)  @default(now())
+    announceCount Int           @default(0)
+    cooldownUntil Timestamp(3)?
+    reason        String?
+    user          User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "AnnounceRateLimit_userId_fkey")
+
+    @@index([userId], map: "AnnounceRateLimit_userId_idx")
+  }
+
+  model Announcement {
+    id          String       @id(map: "Announcement_pkey")
+    title       String
+    body        String
+    createdAt   Timestamp(3) @default(now())
+    updatedAt   Timestamp(3)
+    createdById String
+    pinned      Boolean      @default(false)
+    visible     Boolean      @default(true)
+    createdBy   User         @relation(fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Announcement_createdById_fkey", index: false)
+
+    @@index([pinned], map: "Announcement_pinned_idx")
+    @@index([visible], map: "Announcement_visible_idx")
+  }
+
+  model Bookmark {
+    id        String       @id(map: "Bookmark_pkey")
+    userId    String
+    torrentId String
+    createdAt Timestamp(3) @default(now())
+    note      String?
+    torrent   Torrent      @relation(fields: [torrentId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Bookmark_torrentId_fkey", index: false)
+    user      User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Bookmark_userId_fkey", index: false)
+
+    @@index([userId, torrentId], map: "Bookmark_userId_torrentId_key", unique: true)
+  }
+
+  model Source {
+    id              String           @id(map: "Source_pkey")
+    name            String
+    isActive        Boolean          @default(true)
+    createdAt       Timestamp(3)     @default(now())
+    updatedAt       Timestamp(3)
+    categorySources CategorySource[]
+
+    @@index([name], map: "Source_name_key", unique: true)
+  }
+
+  model CategorySource {
+    id          String       @id(map: "CategorySource_pkey")
+    categoryId  String
+    sourceId    String
+    isInherited Boolean      @default(false)
+    order       Int          @default(0)
+    createdAt   Timestamp(3) @default(now())
+    updatedAt   Timestamp(3)
+    category    Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "CategorySource_categoryId_fkey")
+    source      Source       @relation(fields: [sourceId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "CategorySource_sourceId_fkey")
+
+    @@index([categoryId], map: "CategorySource_categoryId_idx")
+    @@index([categoryId, order], map: "CategorySource_categoryId_order_idx")
+    @@index([categoryId, sourceId], map: "CategorySource_categoryId_sourceId_key", unique: true)
+    @@index([sourceId], map: "CategorySource_sourceId_idx")
+  }
+
+  model Request {
+    id              String                 @id(map: "Request_pkey")
+    userId          String
+    title           String
+    description     String?
+    status          pg.enum(RequestStatus) @default("OPEN")
+    filledById      String?
+    filledTorrentId String?
+    categoryId      String?
+    createdAt       Timestamp(3)           @default(now())
+    updatedAt       Timestamp(3)
+    comments        Comment[]
+    category        Category?              @relation(fields: [categoryId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Request_categoryId_fkey", index: false)
+    filledBy        User?                  @relation(name: "Request_filledById_fkey", fields: [filledById], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Request_filledById_fkey", index: false)
+    filledTorrent   Torrent?               @relation(fields: [filledTorrentId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Request_filledTorrentId_fkey", index: false)
+    user            User                   @relation(name: "Request_userId_fkey", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Request_userId_fkey", index: false)
+  }
+
+  model Comment {
+    id           String        @id(map: "Comment_pkey")
+    content      String
+    createdAt    Timestamp(3)  @default(now())
+    updatedAt    Timestamp(3)
+    deleted      Boolean       @default(false)
+    parentId     String?
+    torrentId    String?
+    requestId    String?
+    userId       String
+    commentVotes CommentVote[]
+    parent       Comment?      @relation(name: "Comment_parentId_fkey", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Comment_parentId_fkey", index: false)
+    comments     Comment[]     @relation(name: "Comment_parentId_fkey")
+    request      Request?      @relation(fields: [requestId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Comment_requestId_fkey", index: false)
+    torrent      Torrent?      @relation(fields: [torrentId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Comment_torrentId_fkey", index: false)
+    user         User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Comment_userId_fkey", index: false)
+  }
+
+  model CommentVote {
+    id        String       @id(map: "CommentVote_pkey")
+    userId    String
+    commentId String
+    value     Int
+    createdAt Timestamp(3) @default(now())
+    comment   Comment      @relation(fields: [commentId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "CommentVote_commentId_fkey", index: false)
+    user      User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "CommentVote_userId_fkey", index: false)
+
+    @@index([userId, commentId], map: "CommentVote_userId_commentId_key", unique: true)
+  }
+
+  model Config {
+    id                        Int                  @id(map: "Config_pkey") @default(1)
+    registrationMode          pg.enum(RegMode)     @default("OPEN")
+    storageType               pg.enum(StorageType) @default("DB")
+    requireTorrentApproval    Boolean              @default(false)
+    bonusPointsPerHour        Int                  @default(1)
+    minRatio                  Float                @default(0.5)
+    requiredSeedingMinutes    Int                  @default(4320)
+    hitAndRunThreshold        Int                  @default(5)
+    enableAnnounceRateCheck   Boolean              @default(true)
+    enableCheatingClientCheck Boolean              @default(true)
+    enableGhostLeechingCheck  Boolean              @default(true)
+    enableInvalidStatsCheck   Boolean              @default(true)
+    enableIpAbuseCheck        Boolean              @default(true)
+    enablePeerBanCheck        Boolean              @default(true)
+    blacklistedClients        String[]?            @default([]) @noCheck(elementNotNull)
+    whitelistedClients        String[]?            @default([]) @noCheck(elementNotNull)
+    allowedFingerprints       String[]?            @default([]) @noCheck(elementNotNull)
+    defaultAnnounceInterval   Int                  @default(1800)
+    minAnnounceInterval       Int                  @default(300)
+    maxStatsJumpMultiplier    Int                  @default(10)
+    smtpFrom                  String?
+    smtpHost                  String?
+    smtpPass                  String?
+    smtpPort                  Int?
+    smtpUser                  String?
+    rssDefaultCount           Int                  @default(20)
+    s3AccessKeyId             String?
+    s3Bucket                  String?
+    s3Region                  String?
+    s3SecretAccessKey         String?
+    brandingName              String?
+    inviteExpiryHours         Int                  @default(6)
+    maxInvitesPerUser         Int                  @default(5)
+    showHomePageStats         Boolean              @default(true)
+    ranksEnabled              Boolean              @default(true)
+  }
+
+  model DownloadToken {
+    id        String       @id(map: "DownloadToken_pkey")
+    token     String
+    userId    String
+    torrentId String
+    expiresAt Timestamp(3)
+    used      Boolean      @default(false)
+    createdAt Timestamp(3) @default(now())
+    torrent   Torrent      @relation(fields: [torrentId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "DownloadToken_torrentId_fkey", index: false)
+    user      User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "DownloadToken_userId_fkey", index: false)
+
+    @@index([expiresAt], map: "DownloadToken_expiresAt_idx")
+    @@index([token], map: "DownloadToken_token_idx")
+    @@index([token], map: "DownloadToken_token_key", unique: true)
+  }
+
+  model EmailVerificationToken {
+    id        String       @id(map: "EmailVerificationToken_pkey")
+    userId    String
+    token     String
+    createdAt Timestamp(3) @default(now())
+    expiresAt Timestamp(3)
+    used      Boolean      @default(false)
+    user      User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "EmailVerificationToken_userId_fkey")
+
+    @@index([token], map: "EmailVerificationToken_token_idx")
+    @@index([token], map: "EmailVerificationToken_token_key", unique: true)
+    @@index([userId], map: "EmailVerificationToken_userId_idx")
+  }
+
+  model HitAndRun {
+    id               String        @id(map: "HitAndRun_pkey")
+    userId           String
+    torrentId        String
+    downloadedAt     Timestamp(3)  @default(now())
+    lastSeededAt     Timestamp(3)?
+    totalSeedingTime Int           @default(0)
+    isHitAndRun      Boolean       @default(false)
+    torrent          Torrent       @relation(fields: [torrentId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "HitAndRun_torrentId_fkey", index: false)
+    user             User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "HitAndRun_userId_fkey", index: false)
+  }
+
+  model Invite {
+    id          String        @id(map: "Invite_pkey")
+    code        String
+    createdById String
+    usedById    String?
+    createdAt   Timestamp(3)  @default(now())
+    usedAt      Timestamp(3)?
+    expiresAt   Timestamp(3)?
+    createdBy   User          @relation(name: "Invite_createdById_fkey", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Invite_createdById_fkey", index: false)
+    usedBy      User?         @relation(name: "Invite_usedById_fkey", fields: [usedById], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Invite_usedById_fkey", index: false)
+
+    @@index([code], map: "Invite_code_key", unique: true)
+  }
+
+  model PeerBan {
+    id            String         @id(map: "PeerBan_pkey")
+    userId        String?
+    passkey       String?
+    peerId        String?
+    ip            String?
+    reason        String
+    expiresAt     Timestamp(3)?
+    createdAt     Timestamp(3)   @default(now())
+    bannedById    String
+    notifications Notification[]
+    bannedBy      User           @relation(fields: [bannedById], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "PeerBan_bannedById_fkey")
+
+    @@index([bannedById], map: "PeerBan_bannedById_idx")
+    @@index([ip], map: "PeerBan_ip_idx")
+    @@index([passkey], map: "PeerBan_passkey_idx")
+    @@index([peerId], map: "PeerBan_peerId_idx")
+    @@index([userId], map: "PeerBan_userId_idx")
+  }
+
+  model Notification {
+    id           String       @id(map: "Notification_pkey")
+    userId       String
+    _type        String       @map("type")
+    message      String
+    read         Boolean      @default(false)
+    createdAt    Timestamp(3) @default(now())
+    relatedBanId String?
+    adminId      String?
+    admin        User?        @relation(name: "Notification_adminId_fkey", fields: [adminId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Notification_adminId_fkey", index: false)
+    relatedBan   PeerBan?     @relation(fields: [relatedBanId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "Notification_relatedBanId_fkey", index: false)
+    user         User         @relation(name: "Notification_userId_fkey", fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "Notification_userId_fkey")
+
+    @@index([read], map: "Notification_read_idx")
+    @@index([userId], map: "Notification_userId_idx")
+  }
+
+  model PasswordResetToken {
+    id        String       @id(map: "PasswordResetToken_pkey")
+    userId    String
+    token     String
+    createdAt Timestamp(3) @default(now())
+    expiresAt Timestamp(3)
+    used      Boolean      @default(false)
+    user      User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "PasswordResetToken_userId_fkey")
+
+    @@index([token], map: "PasswordResetToken_token_idx")
+    @@index([token], map: "PasswordResetToken_token_key", unique: true)
+    @@index([userId], map: "PasswordResetToken_userId_idx")
+  }
+
+  model Rank {
+    id          String       @id(map: "Rank_pkey")
+    name        String
+    description String?
+    order       Int
+    minUpload   BigInt       @default(0)
+    minDownload BigInt       @default(0)
+    minRatio    Float        @default(0)
+    color       String?
+    createdAt   Timestamp(3) @default(now())
+    updatedAt   Timestamp(3)
+
+    @@index([name], map: "Rank_name_key", unique: true)
+    @@index([order], map: "Rank_order_key", unique: true)
+  }
+
+  model TorrentVote {
+    id        String       @id(map: "TorrentVote_pkey")
+    userId    String
+    torrentId String
+    value     Int
+    createdAt Timestamp(3) @default(now())
+    torrent   Torrent      @relation(fields: [torrentId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "TorrentVote_torrentId_fkey", index: false)
+    user      User         @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "TorrentVote_userId_fkey", index: false)
+
+    @@index([userId, torrentId], map: "TorrentVote_userId_torrentId_key", unique: true)
+  }
+
+  model UserActivity {
+    id         String       @id(map: "UserActivity_pkey")
+    userId     String
+    _type      String       @map("type")
+    entityType String?
+    entityId   String?
+    title      String
+    subtitle   String?
+    metadata   Jsonb?
+    createdAt  Timestamp(3) @default(now())
+    user       User         @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade, map: "UserActivity_userId_fkey")
+
+    @@index([_type], map: "UserActivity_type_idx")
+    @@index([userId, createdAt], map: "UserActivity_userId_createdAt_idx")
+    @@index([userId], map: "UserActivity_userId_idx")
+  }
+
+  model WikiPage {
+    id          String       @id(map: "WikiPage_pkey")
+    slug        String
+    title       String
+    content     String
+    createdAt   Timestamp(3) @default(now())
+    updatedAt   Timestamp(3)
+    createdById String
+    updatedById String
+    visible     Boolean      @default(true)
+    locked      Boolean      @default(false)
+    parentId    String?
+    createdBy   User         @relation(name: "WikiPage_createdById_fkey", fields: [createdById], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "WikiPage_createdById_fkey", index: false)
+    parent      WikiPage?    @relation(name: "WikiPage_parentId_fkey", fields: [parentId], references: [id], onDelete: SetNull, onUpdate: Cascade, map: "WikiPage_parentId_fkey", index: false)
+    wikiPages   WikiPage[]   @relation(name: "WikiPage_parentId_fkey")
+    updatedBy   User         @relation(name: "WikiPage_updatedById_fkey", fields: [updatedById], references: [id], onDelete: Restrict, onUpdate: Cascade, map: "WikiPage_updatedById_fkey", index: false)
+
+    @@index([locked], map: "WikiPage_locked_idx")
+    @@index([slug], map: "WikiPage_slug_idx")
+    @@index([slug], map: "WikiPage_slug_key", unique: true)
+    @@index([visible], map: "WikiPage_visible_idx")
+  }
+
+  native_enum RegMode {
+    OPEN = "OPEN"
+    INVITE = "INVITE"
+    CLOSED = "CLOSED"
+  }
+
+  native_enum RequestStatus {
+    OPEN = "OPEN"
+    FILLED = "FILLED"
+    CLOSED = "CLOSED"
+    REJECTED = "REJECTED"
+  }
+
+  native_enum StorageType {
+    LOCAL = "LOCAL"
+    S3 = "S3"
+    DB = "DB"
+  }
+
+  native_enum UserRole {
+    USER = "USER"
+    MOD = "MOD"
+    ADMIN = "ADMIN"
+    OWNER = "OWNER"
+    FOUNDER = "FOUNDER"
+  }
+
+  native_enum UserStatus {
+    ACTIVE = "ACTIVE"
+    BANNED = "BANNED"
+    DISABLED = "DISABLED"
+  }
+}
