@@ -630,7 +630,9 @@ Each group below is one task. For every task:
 | `create({ data: x })` | `create(x)` |
 | `update({ where: w, data: d })` | `.where(w).update(d)` — returns `Row \| null` instead of throwing `P2025`; add a null check to preserve throw-on-missing |
 | `delete({ where: w })` | `.where(w).delete()` — returns `Row \| null` instead of throwing `P2025` |
-| `upsert({ where: w, create, update })` | `.where(w).upsert(...)` |
+| `upsert({ where: w, create, update })` | `Model.upsert({ create, update, conflictOn? })` — `where` is *not* a `.where()` clause; `conflictOn` names the unique-constraint fields and is omitted for a PK conflict. The inferred contract records `@@index(..., unique: true)` keys under `indexes`, so `conflictOn`'s public type only exposes the PK; cast the object (`as any`) when targeting an index-backed composite key — the runtime resolves the given field names to columns for `ON CONFLICT` directly. |
+| `include` on a write | `.include('rel').create(x)` / `.where(w).include('rel').update(d)` chain the include *before* the write terminal; the returned row carries the relation. |
+| Comparing a decoded timestamp | Decoded timestamps are PostgreSQL text, so `date < new Date()` is a bug: compare with `parseTimestamp(value) < Date.now()`. `count()` result: `(await Model.where(w).aggregate((a) => ({ n: a.count() }))).n`. |
 | `updateMany` / `deleteMany` | `.where(...).updateAndCount(d)` / `.where(...).deleteAndCount()` — these return a bare `number`, not `{ count }`; return `{ count }` at the public boundary to preserve the v7 `BatchPayload` shape. A filter-less `updateMany` needs `.where({})` |
 | `count()` | `.aggregate((a) => ({ n: a.count() }))` (returns one object, not an array) |
 | `aggregate({ _sum: { f: true } })` | `.aggregate((a) => ({ total: a.sum("f") }))` (`avg`/`min`/`max` likewise take the field name; `sumBigInt` for a lossless BigInt result) |

@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../lib/prisma.js';
+import { db } from '../lib/prisma.js';
 
 // Helper: Build threaded comments up to 4 levels, but at the limit, do not fetch further replies
 async function buildThreadedComments(comments: any[], opUserId: string, currentUserId: string | null, level = 0): Promise<any[]> {
@@ -9,13 +9,16 @@ async function buildThreadedComments(comments: any[], opUserId: string, currentU
       let replies: any[] = [];
       let hasMoreReplies = false;
       if (level < 4) {
-        replies = await prisma.comment.findMany({
-          where: { parentId: comment.id, deleted: false },
-          orderBy: { createdAt: 'asc' },
-          include: { user: true, votes: true },
-        });
+        replies = await db.orm.public.Comment
+          .where({ parentId: comment.id, deleted: false })
+          .orderBy((c) => c.createdAt.asc())
+          .include('user')
+          .include('votes')
+          .all();
       } else if (level === 4) {
-        const count = await prisma.comment.count({ where: { parentId: comment.id, deleted: false } });
+        const count = (await db.orm.public.Comment
+          .where({ parentId: comment.id, deleted: false })
+          .aggregate((a) => ({ n: a.count() }))).n;
         hasMoreReplies = count > 0;
       }
       const upvotes = comment.votes.filter((v: any) => v.value === 1).length;
@@ -72,20 +75,26 @@ export async function listCommentsForTorrentHandler(request: FastifyRequest, rep
   const user = (request as any).user || null;
   const currentUserId: string | null = user?.id || null;
 
-  const torrent = await prisma.torrent.findUnique({ where: { id } });
+  const torrent = await db.orm.public.Torrent.where({ id }).first();
   if (!torrent) return reply.status(404).send({ error: 'Torrent not found' });
   const opUserId = torrent.uploaderId;
 
-  const [rootComments, total] = await Promise.all([
-    prisma.comment.findMany({
-      where: { torrentId: id, parentId: null, deleted: false },
-      orderBy: { createdAt: 'asc' },
-      skip,
-      take,
-      include: { user: true, votes: true },
-    }),
-    prisma.comment.count({ where: { torrentId: id, parentId: null, deleted: false } })
+  const [rootComments, totalResult] = await Promise.all([
+    db.orm.public.Comment
+      .where({ torrentId: id, deleted: false })
+      .where((c) => c.parentId.isNull())
+      .orderBy((c) => c.createdAt.asc())
+      .offset(skip)
+      .limit(take)
+      .include('user')
+      .include('votes')
+      .all(),
+    db.orm.public.Comment
+      .where({ torrentId: id, deleted: false })
+      .where((c) => c.parentId.isNull())
+      .aggregate((a) => ({ n: a.count() }))
   ]);
+  const total = totalResult.n;
 
   const threaded = await buildThreadedComments(rootComments, opUserId, currentUserId);
   const totalPages = Math.max(1, Math.ceil(total / take));
@@ -106,20 +115,20 @@ export async function createCommentForTorrentHandler(request: FastifyRequest, re
   }
   // Check parent (if replying)
   if (parentId) {
-    const parent = await prisma.comment.findUnique({ where: { id: parentId } });
+    const parent = await db.orm.public.Comment.where({ id: parentId }).first();
     if (!parent || parent.torrentId !== id) {
       return reply.status(400).send({ error: 'Invalid parent comment' });
     }
   }
-  const comment = await prisma.comment.create({
-    data: {
+  const comment = await db.orm.public.Comment
+    .include('user')
+    .include('votes')
+    .create({
       content,
       userId: user.id,
       torrentId: id,
       parentId: parentId || null,
-    },
-    include: { user: true, votes: true },
-  });
+    });
   return reply.status(201).send(convertBigInts(comment));
 }
 
@@ -129,17 +138,17 @@ export async function editCommentHandler(request: FastifyRequest, reply: Fastify
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   const { commentId } = request.params as any;
   const { content } = request.body as any;
-  const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+  const comment = await db.orm.public.Comment.where({ id: commentId }).first();
   if (!comment) return reply.status(404).send({ error: 'Comment not found' });
   if (comment.userId !== user.id) return reply.status(403).send({ error: 'Forbidden' });
   if (!content || typeof content !== 'string' || !content.trim()) {
     return reply.status(400).send({ error: 'Content required' });
   }
-  const updated = await prisma.comment.update({
-    where: { id: commentId },
-    data: { content },
-    include: { user: true, votes: true },
-  });
+  const updated = await db.orm.public.Comment
+    .where({ id: commentId })
+    .include('user')
+    .include('votes')
+    .update({ content });
   return reply.send(convertBigInts(updated));
 }
 
@@ -148,12 +157,12 @@ export async function deleteCommentHandler(request: FastifyRequest, reply: Fasti
   const user = (request as any).user;
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   const { commentId } = request.params as any;
-  const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+  const comment = await db.orm.public.Comment.where({ id: commentId }).first();
   if (!comment) return reply.status(404).send({ error: 'Comment not found' });
       if (comment.userId !== user.id && user.role !== 'ADMIN' && user.role !== 'OWNER' && user.role !== 'FOUNDER') {
     return reply.status(403).send({ error: 'Forbidden' });
   }
-  await prisma.comment.update({ where: { id: commentId }, data: { deleted: true } });
+  await db.orm.public.Comment.where({ id: commentId }).update({ deleted: true });
   return reply.send({ success: true });
 }
 
@@ -164,13 +173,16 @@ export async function voteCommentHandler(request: FastifyRequest, reply: Fastify
   const { commentId } = request.params as any;
   const { value } = request.body as any;
   if (![1, -1].includes(value)) return reply.status(400).send({ error: 'Invalid vote value' });
-  const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+  const comment = await db.orm.public.Comment.where({ id: commentId }).first();
   if (!comment) return reply.status(404).send({ error: 'Comment not found' });
   // Upsert vote
-  await prisma.commentVote.upsert({
-    where: { userId_commentId: { userId: user.id, commentId } },
-    update: { value },
+  await db.orm.public.CommentVote.upsert({
     create: { userId: user.id, commentId, value },
+    update: { value },
+    // The inferred v8 contract records this composite key as a unique *index*,
+    // which `conflictOn`'s type cannot see, but the runtime resolves the given
+    // field names to columns for `ON CONFLICT` directly.
+    conflictOn: { userId: user.id, commentId } as any,
   });
   return reply.send({ success: true });
 }
@@ -178,25 +190,27 @@ export async function voteCommentHandler(request: FastifyRequest, reply: Fastify
 // GET /comments/:commentId/thread - fetch full sub-thread for a comment (unlimited depth)
 export async function getCommentThreadHandler(request: FastifyRequest, reply: FastifyReply) {
   const { commentId } = request.params as any;
-  const comment = await prisma.comment.findUnique({
-    where: { id: commentId },
-    include: { user: true, votes: true },
-  });
+  const comment = await db.orm.public.Comment
+    .where({ id: commentId })
+    .include('user')
+    .include('votes')
+    .first();
   if (!comment) return reply.status(404).send({ error: 'Comment not found' });
   // Find OP (walk up to root)
   let opUserId = comment.userId;
   let parent = comment;
   while (parent.parentId) {
-    parent = await prisma.comment.findUnique({ where: { id: parent.parentId } }) as any;
+    parent = await db.orm.public.Comment.where({ id: parent.parentId }).first() as any;
     if (parent) opUserId = parent.userId;
   }
   // Recursively fetch all descendants
   async function buildFullThread(c: any): Promise<any> {
-    const replies = await prisma.comment.findMany({
-      where: { parentId: c.id, deleted: false },
-      orderBy: { createdAt: 'asc' },
-      include: { user: true, votes: true },
-    });
+    const replies = await db.orm.public.Comment
+      .where({ parentId: c.id, deleted: false })
+      .orderBy((cc) => cc.createdAt.asc())
+      .include('user')
+      .include('votes')
+      .all();
     return {
       id: c.id,
       content: c.deleted ? '[deleted]' : c.content,

@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../lib/prisma.js';
+import { db } from '../lib/prisma.js';
+import { or } from '@prisma/orm-postgres/orm-client';
+import { toTimestamp, parseTimestamp } from '../lib/timestamps.js';
 import { UserRole } from '../generated/prisma/client.js';
 import { getConfig, isFirstUser } from '../services/configService.js';
 import jwt from 'jsonwebtoken';
@@ -47,17 +49,12 @@ export async function registerHandler(request: FastifyRequest, reply: FastifyRep
     if (!inviteCode || typeof inviteCode !== 'string') {
       return reply.status(400).send({ error: 'Invite code required.' });
     }
-    const now = new Date();
-    inviteRecord = await prisma.invite.findFirst({
-      where: {
-        code: inviteCode,
-        usedById: null, // Check that invite hasn't been used
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: now } }
-        ]
-      }
-    });
+    const now = toTimestamp(new Date().toISOString());
+    inviteRecord = await db.orm.public.Invite
+      .where({ code: inviteCode })
+      .where((i) => i.usedById.isNull()) // Check that invite hasn't been used
+      .where((i) => or(i.expiresAt.isNull(), i.expiresAt.gt(now)))
+      .first();
     if (!inviteRecord) {
       return reply.status(400).send({ error: 'Invalid or expired invite code.' });
     }
@@ -69,9 +66,9 @@ export async function registerHandler(request: FastifyRequest, reply: FastifyRep
   }
 
   // Check if user/email already exists
-  const existing = await prisma.user.findFirst({
-    where: { OR: [{ email }, { username }] }
-  });
+  const existing = await db.orm.public.User
+    .where((u) => or(u.email.eq(email), u.username.eq(username)))
+    .first();
   if (existing) {
     return reply.status(400).send({ error: 'Email or username already in use.' });
   }
@@ -86,28 +83,23 @@ export async function registerHandler(request: FastifyRequest, reply: FastifyRep
   // Generate unique passkey
   const passkey = randomUUID().replace(/-/g, '');
 
-  const user = await prisma.user.create({
-    data: {
-      email,
-      username,
-      passwordHash,
-      role,
-      // Auto-verify first user to allow immediate access
-      emailVerified: first ? true : false,
-      status: 'ACTIVE',
-      passkey,
-    }
+  const user = await db.orm.public.User.create({
+    email,
+    username,
+    passwordHash,
+    role,
+    // Auto-verify first user to allow immediate access
+    emailVerified: first ? true : false,
+    status: 'ACTIVE',
+    passkey,
   });
 
   // If INVITE mode, mark the invite as used
   if (config.registrationMode === 'INVITE' && inviteRecord) {
     try {
-      await prisma.invite.update({
-        where: { id: inviteRecord.id },
-        data: {
-          usedById: user.id,
-          usedAt: new Date()
-        }
+      await db.orm.public.Invite.where({ id: inviteRecord.id }).update({
+        usedById: user.id,
+        usedAt: toTimestamp(new Date().toISOString())
       });
     } catch (err) {
       console.error('[registerHandler] Failed to mark invite as used:', err);
@@ -120,13 +112,11 @@ export async function registerHandler(request: FastifyRequest, reply: FastifyRep
     try {
       // Generate verification token
       const token = randomUUID();
-      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-      await prisma.emailVerificationToken.create({
-        data: {
-          userId: user.id,
-          token,
-          expiresAt,
-        }
+      const expiresAt = toTimestamp(new Date(Date.now() + 60 * 60 * 1000).toISOString()); // 1 hour
+      await db.orm.public.EmailVerificationToken.create({
+        userId: user.id,
+        token,
+        expiresAt,
       });
 
       // Build verification link
@@ -161,9 +151,7 @@ export async function loginHandler(request: FastifyRequest, reply: FastifyReply)
   if (!password || (!email && !username)) {
     return reply.status(400).send({ error: 'Email/username and password required.' });
   }
-  const user = await prisma.user.findFirst({
-    where: email ? { email } : { username }
-  });
+  const user = await db.orm.public.User.where(email ? { email } : { username }).first();
   if (!user) {
     return reply.status(401).send({ error: 'Invalid credentials.' });
   }
@@ -207,7 +195,7 @@ export async function requestEmailVerificationHandler(request: FastifyRequest, r
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   
   // Get current user status from database (not from JWT)
-  const prismaUser = await prisma.user.findUnique({ where: { id: user.id } });
+  const prismaUser = await db.orm.public.User.where({ id: user.id }).first();
   if (!prismaUser) return reply.status(404).send({ error: 'User not found' });
   
   if (prismaUser.emailVerified) {
@@ -215,20 +203,18 @@ export async function requestEmailVerificationHandler(request: FastifyRequest, r
   }
   
   // Invalidate previous tokens
-  await prisma.emailVerificationToken.updateMany({
-    where: { userId: user.id, used: false, expiresAt: { gt: new Date() } },
-    data: { used: true }
-  });
+  await db.orm.public.EmailVerificationToken
+    .where({ userId: user.id, used: false })
+    .where((t) => t.expiresAt.gt(toTimestamp(new Date().toISOString())))
+    .updateAndCount({ used: true });
   
   // Generate new token
   const token = randomUUID();
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-  await prisma.emailVerificationToken.create({
-    data: {
-      userId: user.id,
-      token,
-      expiresAt,
-    }
+  const expiresAt = toTimestamp(new Date(Date.now() + 60 * 60 * 1000).toISOString()); // 1 hour
+  await db.orm.public.EmailVerificationToken.create({
+    userId: user.id,
+    token,
+    expiresAt,
   });
   
   // Build verification link
@@ -250,36 +236,34 @@ export async function requestEmailVerificationHandler(request: FastifyRequest, r
 export async function verifyEmailHandler(request: FastifyRequest, reply: FastifyReply) {
   const { token } = request.body as any;
   if (!token) return reply.status(400).send({ error: 'Missing token.' });
-  const record = await prisma.emailVerificationToken.findUnique({ where: { token } });
-  if (!record || record.used || record.expiresAt < new Date()) {
+  const record = await db.orm.public.EmailVerificationToken.where({ token }).first();
+  if (!record || record.used || parseTimestamp(record.expiresAt) < Date.now()) {
     return reply.status(400).send({ error: 'Invalid or expired token.' });
   }
   // Mark token as used
-  await prisma.emailVerificationToken.update({ where: { token }, data: { used: true } });
+  await db.orm.public.EmailVerificationToken.where({ token }).update({ used: true });
   // Mark user as verified
-  await prisma.user.update({ where: { id: record.userId }, data: { emailVerified: true } });
+  await db.orm.public.User.where({ id: record.userId }).update({ emailVerified: true });
   return reply.send({ success: true });
 }
 
 export async function requestPasswordResetHandler(request: FastifyRequest, reply: FastifyReply) {
   const { email } = request.body as any;
   if (!email) return reply.status(400).send({ error: 'Email is required.' });
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await db.orm.public.User.where({ email }).first();
   if (user) {
     // Invalidate previous tokens
-    await prisma.passwordResetToken.updateMany({
-      where: { userId: user.id, used: false, expiresAt: { gt: new Date() } },
-      data: { used: true }
-    });
+    await db.orm.public.PasswordResetToken
+      .where({ userId: user.id, used: false })
+      .where((t) => t.expiresAt.gt(toTimestamp(new Date().toISOString())))
+      .updateAndCount({ used: true });
     // Generate new token
     const token = randomUUID();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-    await prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt,
-      }
+    const expiresAt = toTimestamp(new Date(Date.now() + 60 * 60 * 1000).toISOString()); // 1 hour
+    await db.orm.public.PasswordResetToken.create({
+      userId: user.id,
+      token,
+      expiresAt,
     });
     // Build reset link
     const baseUrl = getFrontendBaseUrl();
@@ -299,15 +283,15 @@ export async function requestPasswordResetHandler(request: FastifyRequest, reply
 export async function resetPasswordHandler(request: FastifyRequest, reply: FastifyReply) {
   const { token, password } = request.body as any;
   if (!token || !password) return reply.status(400).send({ error: 'Missing token or password.' });
-  const record = await prisma.passwordResetToken.findUnique({ where: { token } });
-  if (!record || record.used || record.expiresAt < new Date()) {
+  const record = await db.orm.public.PasswordResetToken.where({ token }).first();
+  if (!record || record.used || parseTimestamp(record.expiresAt) < Date.now()) {
     return reply.status(400).send({ error: 'Invalid or expired token.' });
   }
   // Mark token as used
-  await prisma.passwordResetToken.update({ where: { token }, data: { used: true } });
+  await db.orm.public.PasswordResetToken.where({ token }).update({ used: true });
   // Update user password
   const passwordHash = await hashPassword(password);
-  await prisma.user.update({ where: { id: record.userId }, data: { passwordHash } });
+  await db.orm.public.User.where({ id: record.userId }).update({ passwordHash });
   return reply.send({ success: true });
 }
 
@@ -315,7 +299,7 @@ export async function getProfileHandler(request: FastifyRequest, reply: FastifyR
   const user = (request as any).user;
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   // Fetch fresh user info from DB
-  const prismaUser = await prisma.user.findUnique({ where: { id: user.id } });
+  const prismaUser = await db.orm.public.User.where({ id: user.id }).first();
   if (!prismaUser) return reply.status(404).send({ error: 'User not found' });
 
   // Calculate ratio (avoid division by zero)
@@ -325,7 +309,9 @@ export async function getProfileHandler(request: FastifyRequest, reply: FastifyR
   }
 
   // Count hit and runs
-  const hitAndRunCount = await prisma.hitAndRun.count({ where: { userId: user.id, isHitAndRun: true } });
+  const hitAndRunCount = (await db.orm.public.HitAndRun
+    .where({ userId: user.id, isHitAndRun: true })
+    .aggregate((a) => ({ n: a.count() }))).n;
 
   // Calculate user rank
   const userRank = await calculateUserRank(user.id);
@@ -362,10 +348,8 @@ export async function updateProfileHandler(request: FastifyRequest, reply: Fasti
   
   try {
     const passwordHash = await hashPassword(password);
-    const updated = await prisma.user.update({ 
-      where: { id: user.id }, 
-      data: { passwordHash } 
-    });
+    const updated = await db.orm.public.User.where({ id: user.id }).update({ passwordHash });
+    if (!updated) throw new Error('User not found');
     
     return reply.send({ 
       id: updated.id, 
@@ -383,21 +367,17 @@ export async function rotatePasskeyHandler(request: FastifyRequest, reply: Fasti
   const user = (request as any).user;
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   // Check if current passkey is banned
-  const now = new Date();
-  const banned = await prisma.peerBan.findFirst({
-    where: {
-      passkey: user.passkey,
-      OR: [
-        { expiresAt: null },
-        { expiresAt: { gt: now } }
-      ]
-    }
-  });
+  const now = toTimestamp(new Date().toISOString());
+  const banned = await db.orm.public.PeerBan
+    .where({ passkey: user.passkey })
+    .where((b) => or(b.expiresAt.isNull(), b.expiresAt.gt(now)))
+    .first();
   if (banned) {
     return reply.status(403).send({ error: 'Your passkey is currently banned. Contact staff.' });
   }
   const newPasskey = randomUUID().replace(/-/g, '');
-  const updated = await prisma.user.update({ where: { id: user.id }, data: { passkey: newPasskey } });
+  const updated = await db.orm.public.User.where({ id: user.id }).update({ passkey: newPasskey });
+  if (!updated) throw new Error('User not found');
   return reply.send({ passkey: updated.passkey });
 }
 
@@ -426,12 +406,12 @@ export async function uploadAvatarHandler(request: FastifyRequest, reply: Fastif
           config
         });
         // Remove previous avatar file if exists
-        const prev = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarFileId: true } });
+        const prev = await db.orm.public.User.where({ id: user.id }).select('avatarFileId').first();
         if (prev?.avatarFileId) {
           try {
-            const oldFile = await prisma.uploadedFile.findUnique({ where: { id: prev.avatarFileId } });
+            const oldFile = await db.orm.public.UploadedFile.where({ id: prev.avatarFileId }).first();
             if (oldFile) {
-              await deleteFile({ file: oldFile, config });
+              await deleteFile({ file: oldFile as any, config });
             }
           } catch {
             // Ignore deletion errors
@@ -439,10 +419,7 @@ export async function uploadAvatarHandler(request: FastifyRequest, reply: Fastif
         }
         // Para LOCAL servimos por /uploads/, para DB/S3 usamos la ruta genérica /files/:id
         const avatarUrl = config.storageType === 'LOCAL' ? `/uploads/${uploaded.storageKey}` : `/files/${uploaded.id}`;
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { avatarFileId: uploaded.id, avatarUrl }
-        });
+        await db.orm.public.User.where({ id: user.id }).update({ avatarFileId: uploaded.id, avatarUrl });
         return reply.send({ avatarUrl });
       }
     }
@@ -454,21 +431,18 @@ export async function uploadAvatarHandler(request: FastifyRequest, reply: Fastif
       return reply.status(400).send({ error: 'No avatar URL provided' });
     }
     // Remove previous avatar file if exists
-    const prev = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarFileId: true } });
+    const prev = await db.orm.public.User.where({ id: user.id }).select('avatarFileId').first();
     if (prev?.avatarFileId) {
       try {
-        const oldFile = await prisma.uploadedFile.findUnique({ where: { id: prev.avatarFileId } });
+        const oldFile = await db.orm.public.UploadedFile.where({ id: prev.avatarFileId }).first();
         if (oldFile) {
-          await deleteFile({ file: oldFile, config });
+          await deleteFile({ file: oldFile as any, config });
         }
               } catch {
           // Ignore deletion errors
         }
     }
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { avatarFileId: null, avatarUrl: url }
-    });
+    await db.orm.public.User.where({ id: user.id }).update({ avatarFileId: null, avatarUrl: url });
     return reply.send({ avatarUrl: url });
   }
 }
@@ -478,26 +452,23 @@ export async function deleteAvatarHandler(request: FastifyRequest, reply: Fastif
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
 
   const config = normalizeS3Config(await getConfig());
-  const existing = await prisma.user.findUnique({ where: { id: user.id }, select: { avatarFileId: true, avatarUrl: true } });
+  const existing = await db.orm.public.User.where({ id: user.id }).select('avatarFileId', 'avatarUrl').first();
 
   if (!existing) return reply.status(404).send({ error: 'User not found' });
 
   // If there is a stored file, delete it from storage and DB
   if (existing.avatarFileId) {
     try {
-      const file = await prisma.uploadedFile.findUnique({ where: { id: existing.avatarFileId } });
+      const file = await db.orm.public.UploadedFile.where({ id: existing.avatarFileId }).first();
       if (file) {
-        await deleteFile({ file, config });
+        await deleteFile({ file: file as any, config });
       }
     } catch {
       // Ignore deletion errors to avoid blocking user action
     }
   }
 
-  await prisma.user.update({
-    where: { id: user.id },
-    data: { avatarFileId: null, avatarUrl: null }
-  });
+  await db.orm.public.User.where({ id: user.id }).update({ avatarFileId: null, avatarUrl: null });
 
   return reply.send({ success: true });
 }
@@ -505,7 +476,8 @@ export async function deleteAvatarHandler(request: FastifyRequest, reply: Fastif
 export async function disableSelfHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
-  const updated = await prisma.user.update({ where: { id: user.id }, data: { status: 'DISABLED' } });
+  const updated = await db.orm.public.User.where({ id: user.id }).update({ status: 'DISABLED' });
+  if (!updated) throw new Error('User not found');
   const { text, html } = getDisableAccountEmail({ username: updated.username });
   await createNotification({
     userId: updated.id,
