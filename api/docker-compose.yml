@@ -1,9 +1,19 @@
 services:
   obsidian-api:
     ports:
-      - '8888:8888'
+      # host:container - the app listens on 3001 inside the container
+      - '8888:3001'
     volumes:
       # Change the next line to your location of storage
       - ./uploads:/app/uploads
     image: 'izumiko/obsidian-api:latest'
     restart: always
+
+  # One-shot image that only applies database migrations.
+  # Build it from the `migrate` target:
+  #   docker build --target migrate -t izumiko/obsidian-api-migrate:latest .
+  obsidian-api-migrate:
+    image: 'izumiko/obsidian-api-migrate:latest'
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    restart: 'no'
