@@ -104,7 +104,7 @@ export const prisma = new PrismaClient({ adapter });
 
 // v8 (added)
 import postgres from "@prisma/orm-postgres/runtime";
-import type { Contract } from "../generated/prisma8/contract.d";
+import type { Contract } from "../generated/prisma8/contract.js";
 import contractJson from "../generated/prisma8/contract.json" with { type: "json" };
 export const db = postgres<Contract>({ url: process.env.DATABASE_URL!, contractJson });
 ```
@@ -122,6 +122,9 @@ Migrated modules import `db`; not-yet-migrated modules keep importing `prisma`. 
   and include `src/generated/prisma8/**/*.d.ts`. This reverts the current
   `ESNext`/`bundler` values because v8 emits `contract.json`, imported with
   `with { type: "json" }`, which requires one of `esnext|node18|node20|nodenext|preserve`.
+  Under `nodenext` the contract type is imported as `../generated/prisma8/contract.js`
+  (type-only), not `contract.d`. `src/generated/prisma8/` is added to the ESLint ignores
+  (machine-generated, same as the v7 client).
 - Docker:
   - Dependency management moves to pnpm; both `builder` and `migrate` stages use
     `pnpm install --frozen-lockfile` (add `corepack enable` / `pnpm` to the images).

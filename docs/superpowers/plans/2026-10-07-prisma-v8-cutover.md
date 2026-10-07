@@ -451,13 +451,17 @@ and change `include` to:
 (The generated files live under `src/`, so they are already included; add
 `"src/generated/prisma8/**/*.d.ts"` explicitly only if needed after a `tsc` error.)
 
+Note: under `nodenext`, import the contract type as `../generated/prisma8/contract.js`
+(type-only; resolves to `contract.d.ts`). Also add `src/generated/prisma8/` to the ignores in
+`eslint.config.js`, because the emitted `contract.d.ts` otherwise fails lint.
+
 - [ ] **Step 5: Add the `db` client to `src/lib/prisma.ts`**
 
 Append:
 
 ```ts
 import postgres from "@prisma/orm-postgres/runtime";
-import type { Contract } from "../generated/prisma8/contract.d";
+import type { Contract } from "../generated/prisma8/contract.js";
 import contractJson from "../generated/prisma8/contract.json" with { type: "json" };
 
 export const db = postgres<Contract>({

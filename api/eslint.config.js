@@ -41,6 +41,6 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', '*.js', 'src/generated/'],
+    ignores: ['dist/', 'node_modules/', '*.js', 'src/generated/prisma8/'],
   },
 ];
