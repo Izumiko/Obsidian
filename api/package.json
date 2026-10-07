@@ -12,7 +12,6 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "prisma7:generate": "prisma7 generate",
-    "prisma7:migrate": "prisma7 migrate dev",
     "prisma7:seed": "tsx prisma/seed.ts",
     "contract:emit": "prisma contract emit",
     "contract:infer": "prisma contract infer --output prisma8/contract.prisma",

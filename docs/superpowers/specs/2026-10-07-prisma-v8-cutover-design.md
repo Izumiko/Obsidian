@@ -225,3 +225,41 @@ per-route rewrites) may run in parallel where they do not share files.
 
 Revert commits on the `prisma-v8` branch, or return to `api/native-free`. Prisma ORM 7
 remains functional until Phase 4, so any point before P4 is a working state.
+
+## 15. Spike findings and decisions (post-P1)
+
+The P1 spike pinned the v8 API and surfaced two cross-cutting issues. Decisions:
+
+**Pinned v8 syntax (verified against the local DB):**
+- Transaction: `db.transaction(async (tx) => { ... })` (commit on return, rollback on throw).
+- Raw SQL: `db.raw.sql\`...\`.returnsRow({ col: "pg/int4@1" }).build()` then
+  `await db.runtime().query(plan)`; non-returning uses `.affectedCount().build()` +
+  `db.runtime().execute(plan)`.
+- `create` takes field values directly (no `{ data }`).
+- `aggregate((a) => ({ n: a.count() }))` returns a single object (not an array).
+- Enums decode to plain JS strings; `BigInt` decodes to JS `bigint`.
+
+**DateTime → ISO strings (decided).** v8 requires `Temporal` (via `temporal-polyfill`, a
+required peer that is not installed) and returns `Temporal` objects for DateTime by default.
+We avoid Temporal entirely by declaring timestamps as `TimestampString(3)` in the contract
+(codec `pg/timestamp-string@1`), so DateTime columns read/write as PostgreSQL text strings.
+`@updatedAt` is preserved by `temporal.timestampString(3, onCreate: now, onUpdate: now)`.
+App code that assumed `Date` must adapt to strings as groups are migrated.
+
+**Contract authored from the v7 schema, not inferred.** `contract infer` reads the DB and
+loses client-side defaults (`@default(uuid())` × 21, `@default(cuid())` × 3, `@updatedAt` × 10).
+Instead the contract is produced from `prisma/schema.prisma` (via a scratch config using
+`prisma7Schema(...)` + `prisma contract print`), then timestamps are switched to
+`TimestampString`. The resulting contract satisfies the live DB (`db verify`: "Database marker
+and schema match contract").
+
+**TZ=UTC is required.** The `@updatedAt` `timestampNow` generator passes a JS `Date` through
+node-postgres, which serializes in the process timezone; the columns are `timestamp` without
+time zone and the DB session is UTC. The Docker runtime and migrate images set `ENV TZ=UTC`;
+DB tests set `process.env.TZ = "UTC"`.
+
+**Migration ownership transferred (P2 done).** v8 migrations live in `api/migrations/`
+(baseline `20261007T1050_baseline`, 120 ops, ref `db`). `db sign`, `migration status`, and
+`db verify` all pass against the local DB. The `prisma7:migrate` script is retired; the
+Docker `migrate` image runs `prisma db migrate --advance-ref db`.
+
