@@ -1,10 +1,4 @@
-import { PrismaClient } from '../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../lib/prisma.js';
 
 export async function getActivePeers(torrentId: string, excludePeerId: string, limit = 50) {
   const thirtyMinutesAgo = new Date(Date.now() - 30 * 60 * 1000);

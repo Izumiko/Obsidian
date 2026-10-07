@@ -2,13 +2,7 @@ import { FastifyReply, FastifyRequest } from 'fastify';
 import { getConfig } from '../../services/configService.js';
 import { randomUUID } from 'crypto';
 
-import { PrismaClient } from '../../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../../lib/prisma.js';
 
 export async function listUserInvitesHandler(request: FastifyRequest, reply: FastifyReply) {
   const authUser = (request as any).user;
@@ -79,7 +73,6 @@ export async function cancelInviteHandler(request: FastifyRequest, reply: Fastif
   return reply.send({ success: true });
 }
 
-
 // Public endpoint: get invite details by code (no auth)
 export async function getInviteByCodePublicHandler(request: FastifyRequest, reply: FastifyReply) {
   const { code } = request.params as any;
@@ -102,5 +95,4 @@ export async function getInviteByCodePublicHandler(request: FastifyRequest, repl
     usedById: invite.usedById,
   });
 }
-
 

@@ -1,11 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { PrismaClient } from '../../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../../lib/prisma.js';
 
 export async function getPreferencesHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
@@ -108,5 +102,4 @@ export async function getPublicProfileHandler(request: FastifyRequest, reply: Fa
     }))
   });
 }
-
 

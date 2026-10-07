@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { PrismaClient, UserRole } from '../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
+import { prisma } from '../lib/prisma.js';
+import { UserRole } from '../generated/prisma/client.js';
 import { getConfig, isFirstUser } from '../services/configService.js';
 import jwt from 'jsonwebtoken';
 import { sendEmail, getFrontendBaseUrl } from '../utils/sendEmail.js';
@@ -23,11 +23,6 @@ function normalizeS3Config(config: any) {
     s3SecretAccessKey: config.s3SecretAccessKey ?? undefined,
   };
 }
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
 
 const JWT_SECRET = process.env.JWT_SECRET || 'changeme-in-production';
 

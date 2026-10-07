@@ -1,13 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import XMLBuilder from 'fast-xml-builder';
 import crypto from 'crypto';
-import { PrismaClient } from '../../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../../lib/prisma.js';
 
 export async function rssFeedHandler(request: FastifyRequest, reply: FastifyReply) {
   const { token } = request.params as { token: string };

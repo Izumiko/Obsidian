@@ -9,13 +9,7 @@ import { getPeerBanEmail } from '../../utils/emailTemplates/peerBanEmail.js';
 import { getUserBanEmail, getUserUnbanEmail } from '../../utils/emailTemplates/userBanEmail.js';
 import { getPromotionEmail, getDemotionEmail } from '../../utils/emailTemplates/promotionEmail.js';
 import { getRssBannedEmail, getRssUnbannedEmail } from '../../utils/emailTemplates/rssBanEmail.js';
-import { PrismaClient } from '../../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../../lib/prisma.js';
 
 // Helper to convert BigInt fields to strings recursively
 function convertBigInts(obj: any): any {

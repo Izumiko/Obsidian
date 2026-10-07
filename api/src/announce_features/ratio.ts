@@ -1,11 +1,5 @@
-import { PrismaClient } from '../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
+import { prisma } from '../lib/prisma.js';
 import { getConfig } from '../services/configService.js';
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
 
 export async function updateUserRatio(userId: string, uploaded: bigint, downloaded: bigint, peerId: string, torrentId: string) {
   // Find last announce for this user/peer combination (not including torrentId)

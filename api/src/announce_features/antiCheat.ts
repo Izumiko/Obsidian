@@ -1,17 +1,10 @@
-import { PrismaClient } from '../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../lib/prisma.js';
 
 export async function checkGhostLeeching(config: any, params: any): Promise<string | null> {
   if (!config.enableGhostLeechingCheck) return null;
   const { userId, torrentId } = params;
   if (!userId || !torrentId) return null;
   // Find all announces for this user/torrent
-  // const prisma = new PrismaClient();
   const announces = await prisma.announce.findMany({ where: { userId, torrentId } });
   if (announces.length === 0) return null;
   const hasDownloaded = announces.some(a => a.downloaded > BigInt(0));

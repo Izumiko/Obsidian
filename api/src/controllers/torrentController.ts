@@ -1,8 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import parseTorrent from 'parse-torrent';
 import bencode from 'bencode';
-import { PrismaClient } from '../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
+import { prisma } from '../lib/prisma.js';
 import { requireTorrentApproval } from '../services/configService.js';
 import { saveFile, getFile } from '../services/fileStorageService.js';
 import { getConfig } from '../services/configService.js';
@@ -86,11 +85,6 @@ export async function createMagnetTokenHandler(request: FastifyRequest, reply: F
     token: token // Include token for debugging (remove in production)
   });
 }
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
 
 // Helper function to detect the correct protocol (HTTP/HTTPS) from request
 function getBaseUrlFromRequest(request: FastifyRequest): string {
@@ -259,8 +253,6 @@ export async function uploadTorrentHandler(request: FastifyRequest, reply: Fasti
     return reply.status(400).send({ error: 'El torrent debe estar marcado como privado.' });
   }
 
-
-
   // VALIDATION: No emojis in provided torrent name
   let hasEmoji;
   try {
@@ -371,8 +363,6 @@ export async function uploadTorrentHandler(request: FastifyRequest, reply: Fasti
   return reply.status(201).send(convertBigInts({ id: torrent.id, infoHash: torrent.infoHash, name: torrent.name, posterUrl: torrent.posterUrl }));
 }
 
-
-
 // Helper function to modify torrent announce URLs
 async function modifyTorrentAnnounceUrls(torrentBuffer: Buffer, passkey: string, request?: FastifyRequest): Promise<Buffer> {
   try {
@@ -400,7 +390,6 @@ async function modifyTorrentAnnounceUrls(torrentBuffer: Buffer, passkey: string,
     return torrentBuffer;
   }
 }
-
 
 export async function getTorrentHandler(request: FastifyRequest, reply: FastifyReply) {
   const { id } = request.params as any;
@@ -918,7 +907,6 @@ export async function createDownloadTokenHandler(request: FastifyRequest, reply:
     token: token // Include token for debugging (remove in production)
   });
 }
-
 
 export async function downloadTorrentWithTokenHandler(request: FastifyRequest, reply: FastifyReply) {
   const { id } = request.params as any;

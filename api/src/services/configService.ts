@@ -1,10 +1,5 @@
-import { PrismaClient, Config } from '../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../lib/prisma.js';
+import { Config } from '../generated/prisma/client.js';
 
 export async function getConfig(): Promise<Config> {
   // Always fetch the config row with id=1
@@ -27,7 +22,6 @@ export async function updateConfig(data: Partial<Config>): Promise<Config> {
 }
 
 export async function isFirstUser(): Promise<boolean> {
-  const prisma = new PrismaClient({ adapter });
   const count = await prisma.user.count();
   return count === 0;
 }

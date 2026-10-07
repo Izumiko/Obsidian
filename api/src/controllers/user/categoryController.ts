@@ -1,12 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { getSeederLeecherCounts, getCompletedCount } from '../../announce_features/peerList.js';
-import { PrismaClient } from '../../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
-
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({ adapter });
+import { prisma } from '../../lib/prisma.js';
 
 export async function listAllCategoriesHandler(request: FastifyRequest, reply: FastifyReply) {
   const categories = await prisma.category.findMany({
