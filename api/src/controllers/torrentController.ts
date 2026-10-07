@@ -383,7 +383,7 @@ async function modifyTorrentAnnounceUrls(torrentBuffer: Buffer, passkey: string,
     // Re-encode the torrent
     const encoded = bencode.encode(modifiedTorrent);
     
-    return encoded;
+    return Buffer.from(encoded);
   } catch (err) {
     console.error('[modifyTorrentAnnounceUrls] Error modifying torrent:', err);
     // Return original buffer if modification fails
