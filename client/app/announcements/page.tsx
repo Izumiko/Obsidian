@@ -1,8 +1,9 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import DashboardWrapper from '../dashboard/components/DashboardWrapper';
 import AnnouncementsClient from './components/AnnouncementsClient';
-import { serverT, getPreferredLanguage } from '../lib/server-i18n';
+import { useI18n } from '../hooks/useI18n';
 
 function AnnouncementsSkeleton() {
   return (
@@ -47,26 +48,24 @@ function AnnouncementsSkeleton() {
   );
 }
 
-export default async function AnnouncementsPage() {
-  // Get headers for language detection
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+export default function AnnouncementsPage() {
+  const { t } = useI18n();
 
-  // Server-side translations
+  // Client-side translations
   const translations = {
-    title: serverT('sidebar.nav.announcements', language),
-    description: serverT('dashboard.description', language),
-    pinnedAnnouncements: serverT('dashboard.pinnedAnnouncements', language),
-    allAnnouncements: serverT('dashboard.allAnnouncements', language),
-    noAnnouncements: serverT('dashboard.noAnnouncements', language),
-    createdBy: serverT('dashboard.createdBy', language),
-    createdAt: serverT('dashboard.createdAt', language),
-    updatedAt: serverT('dashboard.updatedAt', language),
-    previous: serverT('dashboard.previous', language),
-    next: serverT('dashboard.next', language),
-    page: serverT('dashboard.page', language),
-    of: serverT('dashboard.of', language),
-    loading: serverT('dashboard.loading', language),
+    title: t('sidebar.nav.announcements'),
+    description: t('dashboard.description'),
+    pinnedAnnouncements: t('dashboard.pinnedAnnouncements'),
+    allAnnouncements: t('dashboard.allAnnouncements'),
+    noAnnouncements: t('dashboard.noAnnouncements'),
+    createdBy: t('dashboard.createdBy'),
+    createdAt: t('dashboard.createdAt'),
+    updatedAt: t('dashboard.updatedAt'),
+    previous: t('dashboard.previous'),
+    next: t('dashboard.next'),
+    page: t('dashboard.page'),
+    of: t('dashboard.of'),
+    loading: t('dashboard.loading'),
   };
 
   return (
@@ -85,5 +84,3 @@ export default async function AnnouncementsPage() {
     </DashboardWrapper>
   );
 }
-
-

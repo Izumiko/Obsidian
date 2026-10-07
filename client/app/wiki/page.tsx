@@ -1,8 +1,9 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import DashboardWrapper from '../dashboard/components/DashboardWrapper';
-import { serverT, getPreferredLanguage } from '../lib/server-i18n';
 import WikiClient from './components/WikiClient';
+import { useI18n } from '../hooks/useI18n';
 
 // Loading skeleton component
 function WikiSkeleton() {
@@ -29,13 +30,12 @@ function WikiSkeleton() {
   );
 }
 
-export default async function WikiPage() {
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+export default function WikiPage() {
+  const { t } = useI18n();
 
   const translations = {
-    title: serverT('sidebar.nav.wiki', language),
-    description: serverT('wiki.description', language),
+    title: t('sidebar.nav.wiki'),
+    description: t('wiki.description'),
   };
 
   return (

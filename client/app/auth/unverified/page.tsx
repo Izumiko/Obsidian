@@ -1,27 +1,25 @@
-import { headers } from 'next/headers';
+'use client';
+
 import AuthCard from '../shared/AuthCard';
-import { serverT, getPreferredLanguage } from '@/app/lib/server-i18n';
-import { LanguageSync } from '@/app/components/LanguageSync';
 import { LanguageSelector } from '@/app/components/LanguageSelector';
 import ResendVerificationButton from './components/ResendVerificationButton.client';
 import LogoutButton from './components/LogoutButton.client';
+import { useI18n } from '@/app/hooks/useI18n';
 
-export default async function UnverifiedPage() {
-  const hdrs = await headers();
-  const language = await getPreferredLanguage(hdrs);
-  const title = serverT('auth.unverified.title', language);
-  const message = serverT('auth.unverified.message', language);
-  const resend = serverT('auth.unverified.resend', language);
+export default function UnverifiedPage() {
+  const { t, language } = useI18n();
+  const title = t('auth.unverified.title');
+  const message = t('auth.unverified.message');
+  const resend = t('auth.unverified.resend');
 
   return (
     <>
-      <LanguageSync serverLanguage={language} />
       <AuthCard title={title}>
         <div className="space-y-4">
           <p className="text-sm text-text-secondary">{message}</p>
           <div className="flex gap-2">
             <ResendVerificationButton label={resend} />
-            <LogoutButton label={serverT('auth.login.logout', language)} toast={serverT('auth.notification.successLogout', language)} />
+            <LogoutButton label={t('auth.login.logout')} toast={t('auth.notification.successLogout')} />
           </div>
         </div>
       </AuthCard>
@@ -29,5 +27,3 @@ export default async function UnverifiedPage() {
     </>
   );
 }
-
-
