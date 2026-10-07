@@ -1,7 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { createNotification } from '../../services/notificationService.js';
 import { getRequestClosedEmail, getRequestRejectedEmail } from '../../utils/emailTemplates/requestStatusEmail.js';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
 
 function isAdminOrOwner(user: any) {
   return user && (user.role === 'ADMIN' || user.role === 'OWNER' || user.role === 'FOUNDER');
@@ -13,11 +14,12 @@ export async function closeRequestHandler(request: FastifyRequest, reply: Fastif
   const { id } = request.params as any;
   const { reason } = request.body as any;
   
-  const updated = await prisma.request.update({ where: { id }, data: { status: 'CLOSED' } });
+  const updated = await db.orm.public.Request.where({ id }).update({ status: 'CLOSED' });
+  if (!updated) throw new Error('Request not found');
   
   // Notify requestor
   if (updated.userId) {
-    const requestUser = await prisma.user.findUnique({ where: { id: updated.userId } });
+    const requestUser = await db.orm.public.User.where({ id: updated.userId }).first();
     if (requestUser) {
       const message = reason 
         ? `Your request "${updated.title}" has been closed by an admin. Reason: ${reason}`
@@ -36,7 +38,7 @@ export async function closeRequestHandler(request: FastifyRequest, reply: Fastif
       });
     }
   }
-  return reply.send(updated);
+  return reply.send(convertBigInts(updated));
 }
 
 export async function rejectRequestHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -45,11 +47,12 @@ export async function rejectRequestHandler(request: FastifyRequest, reply: Fasti
   const { id } = request.params as any;
   const { reason } = request.body as any;
   
-  const updated = await prisma.request.update({ where: { id }, data: { status: 'REJECTED' } });
+  const updated = await db.orm.public.Request.where({ id }).update({ status: 'REJECTED' });
+  if (!updated) throw new Error('Request not found');
   
   // Notify requestor
   if (updated.userId) {
-    const requestUser = await prisma.user.findUnique({ where: { id: updated.userId } });
+    const requestUser = await db.orm.public.User.where({ id: updated.userId }).first();
     if (requestUser) {
       const message = reason 
         ? `Your request "${updated.title}" has been rejected by an admin. Reason: ${reason}`
@@ -68,5 +71,5 @@ export async function rejectRequestHandler(request: FastifyRequest, reply: Fasti
       });
     }
   }
-  return reply.send(updated);
+  return reply.send(convertBigInts(updated));
 } 

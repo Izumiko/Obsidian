@@ -42,7 +42,7 @@ async function build(): Promise<void> {
   });
 
     await esbuild.build({
-    entryPoints: [path.join(rootDir, "prisma/seed.ts")],
+    entryPoints: [path.join(rootDir, "src/seed.ts")],
     bundle: true,
     platform: "node",
     target: "node24",
@@ -58,8 +58,8 @@ async function build(): Promise<void> {
   });
 
   copyIfExists(path.join(rootDir, "uploads"), path.join(buildDir, "uploads"));
-  copyIfExists(path.join(rootDir, "prisma/migrations"), path.join(buildDir, "prisma/migrations"));
-  copyIfExists(path.join(rootDir, "prisma/schema.prisma"), path.join(buildDir, "prisma/schema.prisma"));
+  copyIfExists(path.join(rootDir, "migrations"), path.join(buildDir, "migrations"));
+  copyIfExists(path.join(rootDir, "prisma8"), path.join(buildDir, "prisma8"));
 }
 
 build().catch((error: unknown) => {

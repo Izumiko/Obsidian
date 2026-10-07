@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
 import { 
   getAllRanks, 
   createRank, 
@@ -19,7 +20,7 @@ export async function listRanksHandler(request: FastifyRequest, reply: FastifyRe
 
   try {
     const ranks = await getAllRanks();
-    return reply.send({ ranks });
+    return reply.send(convertBigInts({ ranks }));
   } catch (error) {
     console.error('[listRanksHandler] Error:', error);
     return reply.status(500).send({ error: 'Failed to fetch ranks' });
@@ -41,7 +42,7 @@ export async function createRankHandler(request: FastifyRequest, reply: FastifyR
 
   try {
     // Check if order is already taken
-    const existingRank = await prisma.rank.findUnique({ where: { order: Number(order) } });
+    const existingRank = await db.orm.public.Rank.where({ order: Number(order) }).first();
     if (existingRank) {
       return reply.status(400).send({ error: 'Rank order already exists' });
     }
@@ -56,7 +57,7 @@ export async function createRankHandler(request: FastifyRequest, reply: FastifyR
       color: color || null
     });
 
-    return reply.status(201).send({ rank });
+    return reply.status(201).send(convertBigInts({ rank }));
   } catch (error) {
     console.error('[createRankHandler] Error:', error);
     return reply.status(500).send({ error: 'Failed to create rank' });
@@ -79,14 +80,14 @@ export async function updateRankHandler(request: FastifyRequest, reply: FastifyR
 
   try {
     // Check if rank exists
-    const existingRank = await prisma.rank.findUnique({ where: { id } });
+    const existingRank = await db.orm.public.Rank.where({ id }).first();
     if (!existingRank) {
       return reply.status(404).send({ error: 'Rank not found' });
     }
 
     // If order is being changed, check if new order is already taken
     if (order !== undefined && order !== existingRank.order) {
-      const orderConflict = await prisma.rank.findUnique({ where: { order: Number(order) } });
+      const orderConflict = await db.orm.public.Rank.where({ order: Number(order) }).first();
       if (orderConflict && orderConflict.id !== id) {
         return reply.status(400).send({ error: 'Rank order already exists' });
       }
@@ -102,7 +103,7 @@ export async function updateRankHandler(request: FastifyRequest, reply: FastifyR
     if (color !== undefined) updateData.color = color;
 
     const rank = await updateRank(id, updateData);
-    return reply.send({ rank });
+    return reply.send(convertBigInts({ rank }));
   } catch (error) {
     console.error('[updateRankHandler] Error:', error);
     return reply.status(500).send({ error: 'Failed to update rank' });
@@ -156,7 +157,7 @@ export async function getRankHandler(request: FastifyRequest, reply: FastifyRepl
       return reply.status(404).send({ error: 'Rank not found' });
     }
 
-    return reply.send({ rank });
+    return reply.send(convertBigInts({ rank }));
   } catch (error) {
     console.error('[getRankHandler] Error:', error);
     return reply.status(500).send({ error: 'Failed to fetch rank' });

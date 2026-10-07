@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
 
 export async function updateTorrentHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
@@ -10,35 +10,32 @@ export async function updateTorrentHandler(request: FastifyRequest, reply: Fasti
 
   try {
     // Verify the torrent belongs to the user
-    const torrent = await prisma.torrent.findFirst({
-      where: {
+    const torrent = await db.orm.public.Torrent
+      .where({
         id: torrentId,
         uploaderId: user.id
-      }
-    });
+      })
+      .first();
 
     if (!torrent) {
       return reply.status(404).send({ error: 'Torrent not found or access denied' });
     }
 
     // Update the torrent
-    const updatedTorrent = await prisma.torrent.update({
-      where: { id: torrentId },
-      data: {
-        ...(isAnonymous !== undefined && { isAnonymous }),
-        ...(freeleech !== undefined && { freeleech })
-      },
-      select: {
-        id: true,
-        name: true,
-        isAnonymous: true,
-        freeleech: true
-      }
+    const updatedTorrent = await db.orm.public.Torrent.where({ id: torrentId }).update({
+      ...(isAnonymous !== undefined && { isAnonymous }),
+      ...(freeleech !== undefined && { freeleech })
     });
+    if (!updatedTorrent) throw new Error('Torrent not found');
 
     return reply.send({
       success: true,
-      torrent: updatedTorrent
+      torrent: {
+        id: updatedTorrent.id,
+        name: updatedTorrent.name,
+        isAnonymous: updatedTorrent.isAnonymous,
+        freeleech: updatedTorrent.freeleech
+      }
     });
   } catch (error) {
     console.error('Error updating torrent:', error);
@@ -54,21 +51,20 @@ export async function deleteTorrentHandler(request: FastifyRequest, reply: Fasti
 
   try {
     // Verify the torrent belongs to the user
-    const torrent = await prisma.torrent.findFirst({
-      where: {
+    const torrent = await db.orm.public.Torrent
+      .where({
         id: torrentId,
         uploaderId: user.id
-      }
-    });
+      })
+      .first();
 
     if (!torrent) {
       return reply.status(404).send({ error: 'Torrent not found or access denied' });
     }
 
     // Delete the torrent (this will cascade to related records)
-    await prisma.torrent.delete({
-      where: { id: torrentId }
-    });
+    const deleted = await db.orm.public.Torrent.where({ id: torrentId }).delete();
+    if (!deleted) throw new Error('Torrent not found');
 
     return reply.send({
       success: true,

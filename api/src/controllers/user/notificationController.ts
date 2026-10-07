@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { getUserNotifications, markNotificationRead, markAllNotificationsRead } from '../../services/notificationService.js';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
 
 export async function getUserNotificationsHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
@@ -10,7 +11,7 @@ export async function getUserNotificationsHandler(request: FastifyRequest, reply
   const skip = (Number(page) - 1) * Number(limit);
   const notifications = await getUserNotifications(user.id, unreadOnly);
   // Simple pagination (can be optimized later)
-  return reply.send({ notifications: notifications.slice(skip, skip + Number(limit)), total: notifications.length, page: Number(page), limit: Number(limit) });
+  return reply.send(convertBigInts({ notifications: notifications.slice(skip, skip + Number(limit)), total: notifications.length, page: Number(page), limit: Number(limit) }));
 }
 
 export async function markNotificationReadHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -31,6 +32,6 @@ export async function markAllNotificationsReadHandler(request: FastifyRequest, r
 export async function clearNotificationsHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
-  await prisma.notification.deleteMany({ where: { userId: user.id } });
+  await db.orm.public.Notification.where({ userId: user.id }).deleteAndCount();
   return reply.send({ success: true });
-} 
+}

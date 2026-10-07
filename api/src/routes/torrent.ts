@@ -26,7 +26,7 @@ import {
   deleteCommentHandler,
   voteCommentHandler
 } from '../controllers/commentController.js';
-import { prisma } from '../lib/prisma.js';
+import { db } from '../lib/prisma.js';
 
 export async function registerTorrentRoutes(app: FastifyInstance) {
   app.post('/torrent/upload', { preHandler: requireAuth }, uploadTorrentHandler); //DONE
@@ -38,7 +38,7 @@ export async function registerTorrentRoutes(app: FastifyInstance) {
   app.get('/torrent/:id/magnet-debug', { preHandler: requireAuth }, async (request, reply) => {
     const { id } = request.params as any;
     const user = (request as any).user;
-    const torrent = await prisma.torrent.findUnique({ where: { id } });
+    const torrent = await db.orm.public.Torrent.where({ id }).first();
     if (!torrent) return reply.status(404).send({ error: 'Torrent not found' });
     
     // Use auto-detected protocol

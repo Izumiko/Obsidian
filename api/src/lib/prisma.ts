@@ -1,26 +1,12 @@
-import { PrismaClient } from '../generated/prisma/client.js';
-import { PrismaPg } from "@prisma/adapter-pg";
+import postgres from "@prisma/orm-postgres/runtime";
+import type { Contract } from "../generated/prisma8/contract.js";
+import contractJson from "../generated/prisma8/contract.json" with { type: "json" };
 
-/**
- * Prisma Client Configuration
- * 
- * This file configures the Prisma client for database access.
- * It provides a singleton instance to be used throughout the application.
- */
-
-// Create a singleton instance of PrismaClient
-const adapter = new PrismaPg({
-  connectionString: process.env.DATABASE_URL,
-});
-const prisma = new PrismaClient({
-  adapter,
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
+export const db = postgres<Contract>({
+  url: process.env.DATABASE_URL!,
+  contractJson,
 });
 
-// Handle graceful shutdown
 process.on('beforeExit', async () => {
-  await prisma.$disconnect();
+  await db.close();
 });
-
-export { prisma };
-

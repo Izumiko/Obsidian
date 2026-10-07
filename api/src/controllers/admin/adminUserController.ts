@@ -9,19 +9,10 @@ import { getPeerBanEmail } from '../../utils/emailTemplates/peerBanEmail.js';
 import { getUserBanEmail, getUserUnbanEmail } from '../../utils/emailTemplates/userBanEmail.js';
 import { getPromotionEmail, getDemotionEmail } from '../../utils/emailTemplates/promotionEmail.js';
 import { getRssBannedEmail, getRssUnbannedEmail } from '../../utils/emailTemplates/rssBanEmail.js';
-import { prisma } from '../../lib/prisma.js';
-
-// Helper to convert BigInt fields to strings recursively
-function convertBigInts(obj: any): any {
-  if (Array.isArray(obj)) {
-    return obj.map(convertBigInts);
-  } else if (obj && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => [k, typeof v === 'bigint' ? v.toString() : convertBigInts(v)])
-    );
-  }
-  return obj;
-}
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
+import { toTimestamp } from '../../lib/timestamps.js';
+import { or } from '@prisma/orm-postgres/orm-client';
 
 function isAdminOrOwner(user: any) {
   return user && (user.role === 'ADMIN' || user.role === 'OWNER' || user.role === 'FOUNDER');
@@ -39,8 +30,9 @@ export async function banUserHandler(request: FastifyRequest, reply: FastifyRepl
   const user = (request as any).user;
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params as any;
-  const updated = await prisma.user.update({ where: { id }, data: { status: 'BANNED' } });
-  const bannedUser = await prisma.user.findUnique({ where: { id } });
+  const updated = await db.orm.public.User.where({ id }).update({ status: 'BANNED' });
+  if (!updated) throw new Error('User not found');
+  const bannedUser = await db.orm.public.User.where({ id }).first();
   if (bannedUser) {
     const { text, html } = getUserBanEmail({ username: bannedUser.username });
     await createNotification({
@@ -61,8 +53,9 @@ export async function unbanUserHandler(request: FastifyRequest, reply: FastifyRe
   const user = (request as any).user;
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params as any;
-  const updated = await prisma.user.update({ where: { id }, data: { status: 'ACTIVE' } });
-  const unbannedUser = await prisma.user.findUnique({ where: { id } });
+  const updated = await db.orm.public.User.where({ id }).update({ status: 'ACTIVE' });
+  if (!updated) throw new Error('User not found');
+  const unbannedUser = await db.orm.public.User.where({ id }).first();
   if (unbannedUser) {
     const { text, html } = getUserUnbanEmail({ username: unbannedUser.username });
     await createNotification({
@@ -91,7 +84,7 @@ export async function promoteUserHandler(request: FastifyRequest, reply: Fastify
   }
   
   // Get target user
-  const targetUser = await prisma.user.findUnique({ where: { id } });
+  const targetUser = await db.orm.public.User.where({ id }).first();
   if (!targetUser) return reply.status(404).send({ error: 'User not found' });
   
   // Check if target is already OWNER or FOUNDER
@@ -114,9 +107,10 @@ export async function promoteUserHandler(request: FastifyRequest, reply: Fastify
     return reply.status(400).send({ error: 'Cannot promote to FOUNDER. Use role transfer instead.' });
   }
   
-  const updated = await prisma.user.update({ where: { id }, data: { role } });
+  const updated = await db.orm.public.User.where({ id }).update({ role });
+  if (!updated) throw new Error('User not found');
   // Notify promoted user
-  const promotedUser = await prisma.user.findUnique({ where: { id } });
+  const promotedUser = await db.orm.public.User.where({ id }).first();
   if (promotedUser) {
     const { text, html } = getPromotionEmail({ username: promotedUser.username, newRole: role });
     await createNotification({
@@ -138,7 +132,7 @@ export async function demoteUserHandler(request: FastifyRequest, reply: FastifyR
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params as any;
   const { role } = request.body as any;
-  const target = await prisma.user.findUnique({ where: { id } });
+  const target = await db.orm.public.User.where({ id }).first();
   if (!target) return reply.status(404).send({ error: 'User not found' });
   
   // Validate target role
@@ -174,7 +168,8 @@ export async function demoteUserHandler(request: FastifyRequest, reply: FastifyR
     return reply.status(400).send({ error: 'Moderators can only be demoted to USER' });
   }
   
-  const updated = await prisma.user.update({ where: { id }, data: { role } });
+  const updated = await db.orm.public.User.where({ id }).update({ role });
+  if (!updated) throw new Error('User not found');
   // Notify demoted user
   if (target) {
     const { text, html } = getDemotionEmail({ username: target.username, oldRole: target.role });
@@ -200,7 +195,7 @@ export async function transferFounderRoleHandler(request: FastifyRequest, reply:
   if (!targetUserId) return reply.status(400).send({ error: 'Target user ID is required' });
   
   // Get target user
-  const targetUser = await prisma.user.findUnique({ where: { id: targetUserId } });
+  const targetUser = await db.orm.public.User.where({ id: targetUserId }).first();
   if (!targetUser) return reply.status(404).send({ error: 'Target user not found' });
   
   // Cannot transfer to yourself
@@ -209,16 +204,19 @@ export async function transferFounderRoleHandler(request: FastifyRequest, reply:
   }
   
   // Check if there are other founders (should only be one)
-  const founderCount = await prisma.user.count({ where: { role: 'FOUNDER' } });
+  const founderCount: any = (await db.orm.public.User
+    .where({ role: 'FOUNDER' })
+    .aggregate((a: any) => ({ n: a.count() }))).n;
   if (founderCount > 1) {
     return reply.status(400).send({ error: 'Multiple founders detected. Please resolve this before transferring.' });
   }
   
   // Transfer founder role
   const [newFounder, oldFounder] = await Promise.all([
-    prisma.user.update({ where: { id: targetUserId }, data: { role: 'FOUNDER' } }),
-    prisma.user.update({ where: { id: user.id }, data: { role: 'OWNER' } })
+    db.orm.public.User.where({ id: targetUserId }).update({ role: 'FOUNDER' }),
+    db.orm.public.User.where({ id: user.id }).update({ role: 'OWNER' })
   ]);
+  if (!newFounder || !oldFounder) throw new Error('User not found');
   
   // Notify both users
   await Promise.all([
@@ -256,30 +254,35 @@ export async function listPeerBans(request: FastifyRequest, reply: FastifyReply)
   const user = (request as any).user;
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
   const { active, type, value } = (request.query as any) || {};
-  const where: any = {};
-  if (active === 'true') where['OR'] = [{ expiresAt: null }, { expiresAt: { gt: new Date() } }];
-  if (active === 'false') where['expiresAt'] = { lte: new Date() };
-  if (type && ['userId', 'passkey', 'peerId', 'ip'].includes(type as string) && value) {
-    where[type as string] = value;
+  let query: any = db.orm.public.PeerBan;
+  if (active === 'true') {
+    const now = toTimestamp(new Date().toISOString());
+    query = query.where((b: any) => or(b.expiresAt.isNull(), b.expiresAt.gt(now)));
   }
-  const bans = await prisma.peerBan.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: { bannedBy: { select: { id: true, username: true, role: true } } }
-  });
-  return reply.send(bans);
+  if (active === 'false') {
+    const now = toTimestamp(new Date().toISOString());
+    query = query.where((b: any) => b.expiresAt.lte(now));
+  }
+  if (type && ['userId', 'passkey', 'peerId', 'ip'].includes(type as string) && value) {
+    query = query.where({ [type as string]: value });
+  }
+  const bans = await query
+    .orderBy((b: any) => b.createdAt.desc())
+    .include('bannedBy', (u: any) => u.select('id', 'username', 'role'))
+    .all();
+  return reply.send(convertBigInts(bans));
 }
 
 export async function getPeerBan(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params as any;
-  const ban = await prisma.peerBan.findUnique({
-    where: { id },
-    include: { bannedBy: { select: { id: true, username: true, role: true } } }
-  });
+  const ban = await db.orm.public.PeerBan
+    .where({ id })
+    .include('bannedBy', (u: any) => u.select('id', 'username', 'role'))
+    .first();
   if (!ban) return reply.status(404).send({ error: 'Ban not found' });
-  return reply.send(ban);
+  return reply.send(convertBigInts(ban));
 }
 
 export async function addPeerBan(request: FastifyRequest, reply: FastifyReply) {
@@ -289,20 +292,18 @@ export async function addPeerBan(request: FastifyRequest, reply: FastifyReply) {
   if (!reason || (!userId && !passkey && !peerId && !ip)) {
     return reply.status(400).send({ error: 'Must provide reason and at least one of userId, passkey, peerId, or ip' });
   }
-  const ban = await prisma.peerBan.create({
-    data: {
-      userId,
-      passkey,
-      peerId,
-      ip,
-      reason,
-      expiresAt: expiresAt ? new Date(expiresAt) : null,
-      bannedById: user.id
-    }
+  const ban = await db.orm.public.PeerBan.create({
+    userId,
+    passkey,
+    peerId,
+    ip,
+    reason,
+    expiresAt: expiresAt ? toTimestamp(new Date(expiresAt).toISOString()) : null,
+    bannedById: user.id
   });
   // Notify affected user (if userId is present)
   if (userId) {
-    const bannedUser = await prisma.user.findUnique({ where: { id: userId } });
+    const bannedUser = await db.orm.public.User.where({ id: userId }).first();
     if (bannedUser) {
       const { text, html } = getPeerBanEmail({
         username: bannedUser.username,
@@ -322,7 +323,9 @@ export async function addPeerBan(request: FastifyRequest, reply: FastifyReply) {
         emailHtml: html
       });
       // Notify all admins/owners/founders
-      const admins = await prisma.user.findMany({ where: { OR: [{ role: 'ADMIN' }, { role: 'OWNER' }, { role: 'FOUNDER' }] } });
+      const admins = await db.orm.public.User
+        .where((u: any) => or(u.role.eq('ADMIN' as any), u.role.eq('OWNER' as any), u.role.eq('FOUNDER' as any)))
+        .all();
       for (const admin of admins) {
         await createNotification({
           userId: admin.id,
@@ -335,19 +338,20 @@ export async function addPeerBan(request: FastifyRequest, reply: FastifyReply) {
       }
     }
   }
-  return reply.status(201).send(ban);
+  return reply.status(201).send(convertBigInts(ban));
 }
 
 export async function removePeerBan(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params as any;
-  const ban = await prisma.peerBan.findUnique({ where: { id } });
+  const ban = await db.orm.public.PeerBan.where({ id }).first();
   if (!ban) return reply.status(404).send({ error: 'Ban not found' });
-  await prisma.peerBan.delete({ where: { id } });
+  const deleted = await db.orm.public.PeerBan.where({ id }).delete();
+  if (!deleted) throw new Error('Ban not found');
   // Notify affected user (if userId is present)
   if (ban.userId) {
-    const bannedUser = await prisma.user.findUnique({ where: { id: ban.userId } });
+    const bannedUser = await db.orm.public.User.where({ id: ban.userId }).first();
     if (bannedUser) {
       // Unban email (simple text for now)
       await createNotification({
@@ -363,7 +367,9 @@ export async function removePeerBan(request: FastifyRequest, reply: FastifyReply
         emailHtml: `<div style='font-family:sans-serif;color:#222;'><h2>You have been unbanned</h2><p>Dear <b>${bannedUser.username}</b>,</p><p>You have been unbanned by admin <b>${user.username}</b>. You may now use the tracker again.</p></div>`
       });
       // Notify all admins/owners/founders
-      const admins = await prisma.user.findMany({ where: { OR: [{ role: 'ADMIN' }, { role: 'OWNER' }, { role: 'FOUNDER' }] } });
+      const admins = await db.orm.public.User
+        .where((u: any) => or(u.role.eq('ADMIN' as any), u.role.eq('OWNER' as any), u.role.eq('FOUNDER' as any)))
+        .all();
       for (const admin of admins) {
         await createNotification({
           userId: admin.id,
@@ -385,9 +391,10 @@ export async function adminSetRssEnabledHandler(request: FastifyRequest, reply: 
   const { id } = request.params as any;
   const { enabled } = request.body as any;
   if (typeof enabled !== 'boolean') return reply.status(400).send({ error: 'enabled must be boolean' });
-  const updated = await prisma.user.update({ where: { id }, data: { rssEnabled: enabled } });
+  const updated = await db.orm.public.User.where({ id }).update({ rssEnabled: enabled });
+  if (!updated) throw new Error('User not found');
   // Notify user
-  const user = await prisma.user.findUnique({ where: { id } });
+  const user = await db.orm.public.User.where({ id }).first();
   if (user) {
     if (!enabled) {
       const { text, html } = getRssBannedEmail({ username: user.username });
@@ -423,7 +430,8 @@ export async function adminResetRssTokenHandler(request: FastifyRequest, reply: 
   if (!isAdminOrOwner(admin)) return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params as any;
   const newToken = crypto.randomUUID().replace(/-/g, '');
-  const updated = await prisma.user.update({ where: { id }, data: { rssToken: newToken } });
+  const updated = await db.orm.public.User.where({ id }).update({ rssToken: newToken });
+  if (!updated) throw new Error('User not found');
   return reply.send({ success: true, user: convertBigInts(updated) });
 }
 
@@ -432,34 +440,20 @@ export async function listAllUsersHandler(request: FastifyRequest, reply: Fastif
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
   const { page = 1, limit = 20, q } = (request.query as any) || {};
   const skip = (Number(page) - 1) * Number(limit);
-  const where: any = {};
+  let query: any = db.orm.public.User;
   if (q) {
-    where.OR = [
-      { username: { contains: q, mode: 'insensitive' } },
-      { email: { contains: q, mode: 'insensitive' } }
-    ];
+    query = query.where((m: any) => or(m.username.ilike(`%${q}%`), m.email.ilike(`%${q}%`)));
   }
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      skip,
-      take: Number(limit),
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        role: true,
-        status: true,
-        createdAt: true,
-        emailVerified: true,
-        rssEnabled: true,
-        rssToken: true
-      }
-    }),
-    prisma.user.count({ where })
+  const [users, totalResult] = await Promise.all([
+    query
+      .offset(skip)
+      .limit(Number(limit))
+      .orderBy((m: any) => m.createdAt.desc())
+      .select('id', 'username', 'email', 'role', 'status', 'createdAt', 'emailVerified', 'rssEnabled', 'rssToken')
+      .all(),
+    query.aggregate((a: any) => ({ n: a.count() }))
   ]);
-  return reply.send({ users, total, page: Number(page), limit: Number(limit) });
+  return reply.send(convertBigInts({ users, total: totalResult.n, page: Number(page), limit: Number(limit) }));
 }
 
 export async function updateUserEmailHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -468,23 +462,31 @@ export async function updateUserEmailHandler(request: FastifyRequest, reply: Fas
   const { id } = request.params as any;
   const { email } = request.body as any;
   if (!email || typeof email !== 'string') return reply.status(400).send({ error: 'Invalid email' });
-  const existing = await prisma.user.findFirst({ where: { email, id: { not: id } } });
+  const existing = await db.orm.public.User.where({ email }).where((m: any) => m.id.neq(id)).first();
   if (existing) return reply.status(400).send({ error: 'Email already in use' });
-  const oldUser = await prisma.user.findUnique({ where: { id } });
+  const oldUser = await db.orm.public.User.where({ id }).first();
   if (!oldUser) return reply.status(404).send({ error: 'User not found' });
   // Set email and emailVerified false
-  const updated = await prisma.user.update({ where: { id }, data: { email, emailVerified: false } });
+  const updated = await db.orm.public.User.where({ id }).update({ email, emailVerified: false });
+  if (!updated) throw new Error('User not found');
   // Invalidate previous tokens
-  await prisma.emailVerificationToken.updateMany({ where: { userId: id, used: false, expiresAt: { gt: new Date() } }, data: { used: true } });
-  await prisma.passwordResetToken.updateMany({ where: { userId: id, used: false, expiresAt: { gt: new Date() } }, data: { used: true } });
+  const now = toTimestamp(new Date().toISOString());
+  await db.orm.public.EmailVerificationToken
+    .where({ userId: id, used: false })
+    .where((t: any) => t.expiresAt.gt(now))
+    .updateAndCount({ used: true });
+  await db.orm.public.PasswordResetToken
+    .where({ userId: id, used: false })
+    .where((t: any) => t.expiresAt.gt(now))
+    .updateAndCount({ used: true });
   // Generate new verification token
   const verifyToken = randomUUID();
-  const verifyExpires = new Date(Date.now() + 60 * 60 * 1000);
-  await prisma.emailVerificationToken.create({ data: { userId: id, token: verifyToken, expiresAt: verifyExpires } });
+  const verifyExpires = toTimestamp(new Date(Date.now() + 60 * 60 * 1000).toISOString());
+  await db.orm.public.EmailVerificationToken.create({ userId: id, token: verifyToken, expiresAt: verifyExpires });
   // Generate new password reset token
   const resetToken = randomUUID();
-  const resetExpires = new Date(Date.now() + 60 * 60 * 1000);
-  await prisma.passwordResetToken.create({ data: { userId: id, token: resetToken, expiresAt: resetExpires } });
+  const resetExpires = toTimestamp(new Date(Date.now() + 60 * 60 * 1000).toISOString());
+  await db.orm.public.PasswordResetToken.create({ userId: id, token: resetToken, expiresAt: resetExpires });
   // Build links
   const baseUrl = getFrontendBaseUrl();
   const verifyLink = `${baseUrl}/verify?token=${verifyToken}`;
@@ -509,7 +511,7 @@ export async function updateUserHandler(request: FastifyRequest, reply: FastifyR
   const { username, role, status, emailVerified } = request.body as any;
   
   // Check if user exists
-  const existingUser = await prisma.user.findUnique({ where: { id } });
+  const existingUser = await db.orm.public.User.where({ id }).first();
   if (!existingUser) return reply.status(404).send({ error: 'User not found' });
   
   // Validate role permissions
@@ -559,7 +561,7 @@ export async function updateUserHandler(request: FastifyRequest, reply: FastifyR
   
   // Check for username conflicts
   if (username && username !== existingUser.username) {
-    const usernameExists = await prisma.user.findFirst({ where: { username, id: { not: id } } });
+    const usernameExists = await db.orm.public.User.where({ username }).where((m: any) => m.id.neq(id)).first();
     if (usernameExists) return reply.status(400).send({ error: 'Username already in use' });
   }
   
@@ -578,6 +580,7 @@ export async function updateUserHandler(request: FastifyRequest, reply: FastifyR
   }
   
   // Update user
-  const updated = await prisma.user.update({ where: { id }, data: updateData });
+  const updated = await db.orm.public.User.where({ id }).update(updateData);
+  if (!updated) throw new Error('User not found');
   return reply.send({ success: true, user: convertBigInts(updated) });
 } 

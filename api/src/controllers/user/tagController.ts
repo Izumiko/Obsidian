@@ -1,5 +1,23 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../../lib/prisma.js';
+import { or } from '@prisma/orm-postgres/orm-client';
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
+
+function buildOrder(sort: string) {
+  return (m: any) => {
+    switch (sort) {
+      case 'oldest':
+        return m.createdAt.asc();
+      case 'name':
+        return m.name.asc();
+      case 'size':
+        return m.size.desc();
+      case 'newest':
+      default:
+        return m.createdAt.desc();
+    }
+  };
+}
 
 /**
  * Get popular tags with their usage counts
@@ -8,14 +26,14 @@ import { prisma } from '../../lib/prisma.js';
 export async function getPopularTagsHandler(request: FastifyRequest, reply: FastifyReply) {
   try {
     // Get all approved torrents with their tags
-    const torrents = await prisma.torrent.findMany({
-      where: { isApproved: true },
-      select: { tags: true }
-    });
+    const torrents = await db.orm.public.Torrent
+      .where({ isApproved: true })
+      .select('tags')
+      .all();
 
     // Count tag usage
     const tagCounts: Record<string, number> = {};
-    
+
     torrents.forEach(torrent => {
       if (torrent.tags && Array.isArray(torrent.tags)) {
         torrent.tags.forEach(tag => {
@@ -54,89 +72,28 @@ export async function searchTorrentsByTextHandler(request: FastifyRequest, reply
   }
 
   try {
-    // Build sort order
-    let orderBy: any = { createdAt: 'desc' };
-    switch (sort) {
-      case 'oldest':
-        orderBy = { createdAt: 'asc' };
-        break;
-      case 'newest':
-        orderBy = { createdAt: 'desc' };
-        break;
-      case 'name':
-        orderBy = { name: 'asc' };
-        break;
-      case 'size':
-        orderBy = { size: 'desc' };
-        break;
-      default:
-        orderBy = { createdAt: 'desc' };
-    }
-
     // Search torrents by name or description
-    const [torrents, total] = await Promise.all([
-      prisma.torrent.findMany({
-        where: {
-          isApproved: true,
-          OR: [
-            {
-              name: {
-                contains: q,
-                mode: 'insensitive'
-              }
-            },
-            {
-              description: {
-                contains: q,
-                mode: 'insensitive'
-              }
-            }
-          ]
-        },
-        skip,
-        take: Number(limit),
-        orderBy,
-        include: {
-          uploader: {
-            select: {
-              id: true,
-              username: true
-            }
-          },
-          category: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        }
-      }),
-      prisma.torrent.count({
-        where: {
-          isApproved: true,
-          OR: [
-            {
-              name: {
-                contains: q,
-                mode: 'insensitive'
-              }
-            },
-            {
-              description: {
-                contains: q,
-                mode: 'insensitive'
-              }
-            }
-          ]
-        }
-      })
+    const query = db.orm.public.Torrent
+      .where({ isApproved: true })
+      .where((m: any) => or(m.name.ilike(`%${q}%`), m.description.ilike(`%${q}%`)));
+
+    const [torrents, totalResult] = await Promise.all([
+      query
+        .offset(skip)
+        .limit(Number(limit))
+        .orderBy(buildOrder(sort))
+        .include('uploader', (u: any) => u.select('id', 'username'))
+        .include('category', (c: any) => c.select('id', 'name'))
+        .all(),
+      query.aggregate((a: any) => ({ n: a.count() }))
     ]);
+    const total = totalResult.n;
 
     // Calculate stats for each torrent
     const { getSeederLeecherCounts, getCompletedCount } = await import('../../announce_features/peerList.js');
-    
+
     const torrentsWithStats = await Promise.all(
-      torrents.map(async (torrent) => {
+      torrents.map(async (torrent: any) => {
         const [seederLeecherCounts, completedCount] = await Promise.all([
           getSeederLeecherCounts(torrent.id),
           getCompletedCount(torrent.id)
@@ -153,13 +110,13 @@ export async function searchTorrentsByTextHandler(request: FastifyRequest, reply
       })
     );
 
-    return reply.send({
+    return reply.send(convertBigInts({
       torrents: torrentsWithStats,
       total,
       page: Number(page),
       limit: Number(limit),
       query: q
-    });
+    }));
   } catch (error) {
     console.error('Error searching torrents by text:', error);
     return reply.status(500).send({ error: 'Failed to search torrents by text' });
@@ -180,67 +137,33 @@ export async function searchTorrentsByTagHandler(request: FastifyRequest, reply:
   }
 
   try {
-    // Build sort order
-    let orderBy: any = { createdAt: 'desc' };
-    switch (sort) {
-      case 'oldest':
-        orderBy = { createdAt: 'asc' };
-        break;
-      case 'newest':
-        orderBy = { createdAt: 'desc' };
-        break;
-      case 'name':
-        orderBy = { name: 'asc' };
-        break;
-      case 'size':
-        orderBy = { size: 'desc' };
-        break;
-      default:
-        orderBy = { createdAt: 'desc' };
-    }
+    // v8 has no ORM array-containment operator, so matching ids are resolved with
+    // raw SQL and the page is then loaded (and ordered) through the ORM.
+    const idPlan = db.raw.sql`
+      SELECT "id" FROM "Torrent" WHERE "isApproved" = true AND "tags" @> ARRAY[${tag}]::text[]
+    `.returnsRow({ id: 'pg/text@1' }).build();
+    const idRows = await db.runtime().query(idPlan);
+    const ids = idRows.map((r: any) => r.id);
 
-    // Find torrents that contain the tag
-    const [torrents, total] = await Promise.all([
-      prisma.torrent.findMany({
-        where: {
-          isApproved: true,
-          tags: {
-            has: tag
-          }
-        },
-        skip,
-        take: Number(limit),
-        orderBy,
-        include: {
-          uploader: {
-            select: {
-              id: true,
-              username: true
-            }
-          },
-          category: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        }
-      }),
-      prisma.torrent.count({
-        where: {
-          isApproved: true,
-          tags: {
-            has: tag
-          }
-        }
-      })
-    ]);
+    let torrents: any[] = [];
+    if (ids.length > 0) {
+      torrents = await db.orm.public.Torrent
+        .where({ isApproved: true })
+        .where((m: any) => m.id.in(ids))
+        .offset(skip)
+        .limit(Number(limit))
+        .orderBy(buildOrder(sort))
+        .include('uploader', (u: any) => u.select('id', 'username'))
+        .include('category', (c: any) => c.select('id', 'name'))
+        .all();
+    }
+    const total = ids.length;
 
     // Calculate stats for each torrent
     const { getSeederLeecherCounts, getCompletedCount } = await import('../../announce_features/peerList.js');
-    
+
     const torrentsWithStats = await Promise.all(
-      torrents.map(async (torrent) => {
+      torrents.map(async (torrent: any) => {
         const [seederLeecherCounts, completedCount] = await Promise.all([
           getSeederLeecherCounts(torrent.id),
           getCompletedCount(torrent.id)
@@ -257,13 +180,13 @@ export async function searchTorrentsByTagHandler(request: FastifyRequest, reply:
       })
     );
 
-    return reply.send({
+    return reply.send(convertBigInts({
       torrents: torrentsWithStats,
       total,
       page: Number(page),
       limit: Number(limit),
       tag
-    });
+    }));
   } catch (error) {
     console.error('Error searching torrents by tag:', error);
     return reply.status(500).send({ error: 'Failed to search torrents by tag' });

@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
+import { toTimestamp } from '../../lib/timestamps.js';
 
 export async function getUserActivitiesHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
@@ -14,23 +16,24 @@ export async function getUserActivitiesHandler(request: FastifyRequest, reply: F
   }
 
   try {
-    const [activities, total] = await Promise.all([
-      prisma.userActivity.findMany({
-        where,
-        skip,
-        take: Number(limit),
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.userActivity.count({ where })
+    const [activities, totalResult] = await Promise.all([
+      db.orm.public.UserActivity
+        .where(where)
+        .offset(skip)
+        .limit(Number(limit))
+        .orderBy((a: any) => a.createdAt.desc())
+        .all(),
+      db.orm.public.UserActivity.where(where).aggregate((a: any) => ({ n: a.count() }))
     ]);
+    const total = Number(totalResult.n);
 
-    return reply.send({
+    return reply.send(convertBigInts({
       activities,
       total,
       page: Number(page),
       limit: Number(limit),
       totalPages: Math.ceil(total / Number(limit))
-    });
+    }));
   } catch (error) {
     console.error('Error fetching user activities:', error);
     return reply.status(500).send({ error: 'Internal server error' });
@@ -47,16 +50,14 @@ export async function createUserActivityHandler(
   metadata?: any
 ) {
   try {
-    const activity = await prisma.userActivity.create({
-      data: {
-        userId,
-        type,
-        entityType,
-        entityId,
-        title,
-        subtitle,
-        metadata: metadata ? JSON.stringify(metadata) : undefined
-      }
+    const activity = await db.orm.public.UserActivity.create({
+      userId,
+      type,
+      entityType,
+      entityId,
+      title,
+      subtitle,
+      metadata: metadata ? JSON.stringify(metadata) : undefined
     });
     return activity;
   } catch (error) {
@@ -203,42 +204,32 @@ export async function createSmartTorrentDislikedActivity(userId: string, torrent
 async function createSmartBookmarkActivity(userId: string, torrentId: string, torrentName: string, activityType: string, titleKey: string, subtitleKey: string) {
   try {
     // Check if there's a recent bookmark activity for this torrent (within 15 minutes)
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-    
-    const recentActivity = await prisma.userActivity.findFirst({
-      where: {
-        userId,
-        entityType: 'torrent',
-        entityId: torrentId,
-        type: { in: ['bookmark_added', 'bookmark_removed'] },
-        createdAt: { gte: fifteenMinutesAgo }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const fifteenMinutesAgo = toTimestamp(new Date(Date.now() - 15 * 60 * 1000).toISOString());
+
+    const recentActivity = await db.orm.public.UserActivity
+      .where({ userId, entityType: 'torrent', entityId: torrentId })
+      .where((a: any) => a.type.in(['bookmark_added', 'bookmark_removed']))
+      .where((a: any) => a.createdAt.gte(fifteenMinutesAgo))
+      .orderBy((a: any) => a.createdAt.desc())
+      .first();
 
     if (recentActivity) {
       // If the last activity is the same type, update the existing record
       if (recentActivity.type === activityType) {
-        await prisma.userActivity.update({
-          where: { id: recentActivity.id },
-          data: {
-            createdAt: new Date(), // Update timestamp
-            metadata: JSON.stringify({ torrentId, torrentName })
-          }
+        await db.orm.public.UserActivity.where({ id: recentActivity.id }).update({
+          createdAt: toTimestamp(new Date().toISOString()), // Update timestamp
+          metadata: JSON.stringify({ torrentId, torrentName })
         });
         console.log(`[createSmartBookmarkActivity] Updated existing ${activityType} activity for torrent ${torrentId}`);
         return;
       } else {
         // If it's a different type (add vs remove), update the existing record to the new type
-        await prisma.userActivity.update({
-          where: { id: recentActivity.id },
-          data: {
-            type: activityType,
-            title: titleKey,
-            subtitle: subtitleKey,
-            createdAt: new Date(), // Update timestamp
-            metadata: JSON.stringify({ torrentId, torrentName })
-          }
+        await db.orm.public.UserActivity.where({ id: recentActivity.id }).update({
+          type: activityType,
+          title: titleKey,
+          subtitle: subtitleKey,
+          createdAt: toTimestamp(new Date().toISOString()), // Update timestamp
+          metadata: JSON.stringify({ torrentId, torrentName })
         });
         console.log(`[createSmartBookmarkActivity] Updated existing activity from ${recentActivity.type} to ${activityType} for torrent ${torrentId}`);
         return;
@@ -274,42 +265,32 @@ async function createSmartBookmarkActivity(userId: string, torrentId: string, to
 async function createSmartTorrentVoteActivity(userId: string, torrentId: string, torrentName: string, activityType: string, titleKey: string, subtitleKey: string) {
   try {
     // Check if there's a recent vote activity for this torrent (within 15 minutes)
-    const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-    
-    const recentActivity = await prisma.userActivity.findFirst({
-      where: {
-        userId,
-        entityType: 'torrent',
-        entityId: torrentId,
-        type: { in: ['torrent_liked', 'torrent_disliked'] },
-        createdAt: { gte: fifteenMinutesAgo }
-      },
-      orderBy: { createdAt: 'desc' }
-    });
+    const fifteenMinutesAgo = toTimestamp(new Date(Date.now() - 15 * 60 * 1000).toISOString());
+
+    const recentActivity = await db.orm.public.UserActivity
+      .where({ userId, entityType: 'torrent', entityId: torrentId })
+      .where((a: any) => a.type.in(['torrent_liked', 'torrent_disliked']))
+      .where((a: any) => a.createdAt.gte(fifteenMinutesAgo))
+      .orderBy((a: any) => a.createdAt.desc())
+      .first();
 
     if (recentActivity) {
       // If the last activity is the same type, update the existing record
       if (recentActivity.type === activityType) {
-        await prisma.userActivity.update({
-          where: { id: recentActivity.id },
-          data: {
-            createdAt: new Date(), // Update timestamp
-            metadata: JSON.stringify({ torrentId, torrentName, voteType: activityType === 'torrent_liked' ? 'like' : 'dislike' })
-          }
+        await db.orm.public.UserActivity.where({ id: recentActivity.id }).update({
+          createdAt: toTimestamp(new Date().toISOString()), // Update timestamp
+          metadata: JSON.stringify({ torrentId, torrentName, voteType: activityType === 'torrent_liked' ? 'like' : 'dislike' })
         });
         console.log(`[createSmartTorrentVoteActivity] Updated existing ${activityType} activity for torrent ${torrentId}`);
         return;
       } else {
         // If it's a different type (like vs dislike), update the existing record to the new type
-        await prisma.userActivity.update({
-          where: { id: recentActivity.id },
-          data: {
-            type: activityType,
-            title: titleKey,
-            subtitle: subtitleKey,
-            createdAt: new Date(), // Update timestamp
-            metadata: JSON.stringify({ torrentId, torrentName, voteType: activityType === 'torrent_liked' ? 'like' : 'dislike' })
-          }
+        await db.orm.public.UserActivity.where({ id: recentActivity.id }).update({
+          type: activityType,
+          title: titleKey,
+          subtitle: subtitleKey,
+          createdAt: toTimestamp(new Date().toISOString()), // Update timestamp
+          metadata: JSON.stringify({ torrentId, torrentName, voteType: activityType === 'torrent_liked' ? 'like' : 'dislike' })
         });
         console.log(`[createSmartTorrentVoteActivity] Updated existing activity from ${recentActivity.type} to ${activityType} for torrent ${torrentId}`);
         return;

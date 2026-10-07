@@ -1,6 +1,8 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import bencode from 'bencode';
-import { prisma } from '../lib/prisma.js';
+import { db } from '../lib/prisma.js';
+import { or } from '@prisma/orm-postgres/orm-client';
+import { nowTimestamp } from '../lib/timestamps.js';
 import { getActivePeers, getSeederLeecherCounts, getCompletedCount } from '../announce_features/peerList.js';
 import { updateUserRatio, isUserBelowMinRatio } from '../announce_features/ratio.js';
 import { awardBonusPoints } from '../announce_features/bonusPoints.js';
@@ -28,7 +30,7 @@ export async function announceHandler(request: FastifyRequest, reply: FastifyRep
   }
   
   // Validate user
-  const user = await prisma.user.findUnique({ where: { passkey } });
+  const user = await db.orm.public.User.where({ passkey }).first();
   if (!user || user.status !== 'ACTIVE') {
     reply.header('Content-Type', 'text/plain');
     return reply.send(bencode.encode({ 'failure reason': 'Invalid or banned user' }));
@@ -81,33 +83,29 @@ export async function announceHandler(request: FastifyRequest, reply: FastifyRep
   console.log('[announceHandler] Final infoHashHex:', infoHashHex);
   
   // Debug: Let's see what torrents exist in the database
-  const allTorrents = await prisma.torrent.findMany({ where: { isApproved: true }, select: { infoHash: true, name: true } });
+  const allTorrents = await db.orm.public.Torrent.where({ isApproved: true }).select('infoHash', 'name').all();
   console.log('[announceHandler] Available torrents in DB:', allTorrents.map(t => ({ infoHash: t.infoHash, name: t.name })));
   
   // Check if our specific torrent exists and is approved
-  const specificTorrent = await prisma.torrent.findFirst({ 
-    where: { 
-      OR: [
-        { infoHash: infoHashHex },
-        { infoHash: infoHashHex.toLowerCase() },
-        { infoHash: infoHashHex.toUpperCase() }
-      ],
-      isApproved: true 
-    },
-    select: { infoHash: true, name: true, isApproved: true }
-  });
+  const specificTorrent = await db.orm.public.Torrent
+    .where((t) => or(
+      t.infoHash.eq(infoHashHex),
+      t.infoHash.eq(infoHashHex.toLowerCase()),
+      t.infoHash.eq(infoHashHex.toUpperCase())
+    ))
+    .where({ isApproved: true })
+    .select('infoHash', 'name', 'isApproved')
+    .first();
   console.log('[announceHandler] Found torrent with any case:', specificTorrent);
   
-  const torrent = await prisma.torrent.findFirst({ 
-    where: { 
-      OR: [
-        { infoHash: infoHashHex },
-        { infoHash: infoHashHex.toLowerCase() },
-        { infoHash: infoHashHex.toUpperCase() }
-      ],
-      isApproved: true 
-    }
-  });
+  const torrent = await db.orm.public.Torrent
+    .where((t) => or(
+      t.infoHash.eq(infoHashHex),
+      t.infoHash.eq(infoHashHex.toLowerCase()),
+      t.infoHash.eq(infoHashHex.toUpperCase())
+    ))
+    .where({ isApproved: true })
+    .first();
   if (!torrent) {
     reply.header('Content-Type', 'text/plain');
     return reply.send(bencode.encode({ 'failure reason': 'Torrent not found or not approved' }));
@@ -202,22 +200,7 @@ export async function announceHandler(request: FastifyRequest, reply: FastifyRep
   }
   
   // Update announce stats (upsert to avoid duplicate records)
-  await prisma.announce.upsert({
-    where: {
-      torrentId_peerId: {
-        torrentId: torrent.id,
-        peerId: peer_id
-      }
-    },
-    update: {
-      ip: normalizedIp,
-      port: Number(port),
-      uploaded: BigInt(uploaded || 0),
-      downloaded: BigInt(downloaded || 0),
-      left: BigInt(left || 0),
-      event,
-      lastAnnounceAt: new Date()
-    },
+  await db.orm.public.Announce.upsert({
     create: {
       torrentId: torrent.id,
       userId: user.id,
@@ -228,7 +211,20 @@ export async function announceHandler(request: FastifyRequest, reply: FastifyRep
       downloaded: BigInt(downloaded || 0),
       left: BigInt(left || 0),
       event,
-    }
+    },
+    update: {
+      ip: normalizedIp,
+      port: Number(port),
+      uploaded: BigInt(uploaded || 0),
+      downloaded: BigInt(downloaded || 0),
+      left: BigInt(left || 0),
+      event,
+      lastAnnounceAt: nowTimestamp()
+    },
+    // The inferred v8 contract records this composite key as a unique *index*,
+    // which `conflictOn`'s type cannot see, but the runtime resolves the given
+    // field names to columns for `ON CONFLICT` directly.
+    conflictOn: { torrentId: torrent.id, peerId: peer_id } as any
   });
 
   console.log(`[announceHandler] Raw values - uploaded: ${uploaded}, downloaded: ${downloaded}, left: ${left}, event: ${event}`);
@@ -247,7 +243,9 @@ export async function announceHandler(request: FastifyRequest, reply: FastifyRep
           await updateHitAndRun(user.id, torrent.id, Number(left || 0), event);
 
   // ENFORCEMENT: Block if user has too many hit and runs
-  const hitAndRunCount = await prisma.hitAndRun.count({ where: { userId: user.id, isHitAndRun: true } });
+  const hitAndRunCount = (await db.orm.public.HitAndRun
+    .where({ userId: user.id, isHitAndRun: true })
+    .aggregate((a) => ({ n: a.count() }))).n;
   if (hitAndRunCount > config.hitAndRunThreshold) {
     reply.header('Content-Type', 'text/plain');
     return reply.send(bencode.encode({ 'failure reason': 'Too many hit and runs. Please seed your torrents.' }));
@@ -367,7 +365,7 @@ export async function scrapeHandler(request: FastifyRequest, reply: FastifyReply
       hex = Buffer.from(info_hash, 'binary').toString('hex');
     }
     
-    const torrent = await prisma.torrent.findFirst({ where: { infoHash: hex, isApproved: true } });
+    const torrent = await db.orm.public.Torrent.where({ infoHash: hex, isApproved: true }).first();
     if (!torrent) continue;
     const { complete, incomplete } = await getSeederLeecherCounts(torrent.id);
     const downloaded = await getCompletedCount(torrent.id);

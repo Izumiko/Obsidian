@@ -1,4 +1,4 @@
-import { prisma } from '../lib/prisma.js';
+import { db } from '../lib/prisma.js';
 
 export interface Rank {
   id: string;
@@ -37,7 +37,7 @@ export interface UserRank {
  */
 export async function calculateUserRank(userId: string): Promise<UserRank> {
   // Check if ranks are enabled
-  const config = await prisma.config.findFirst();
+  const config = await db.orm.public.Config.first();
   if (!config?.ranksEnabled) {
     return {
       rank: null,
@@ -47,13 +47,10 @@ export async function calculateUserRank(userId: string): Promise<UserRank> {
   }
 
   // Get user stats
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: {
-      upload: true,
-      download: true
-    }
-  });
+  const user = await db.orm.public.User
+    .where({ id: userId })
+    .select('upload', 'download')
+    .first();
 
   if (!user) {
     throw new Error('User not found');
@@ -65,9 +62,9 @@ export async function calculateUserRank(userId: string): Promise<UserRank> {
   const ratio = user.download > 0 ? Number(user.upload) / Number(user.download) : 0;
   const effectiveRatio = user.download === BigInt(0) ? 0 : ratio;
 
-  const ranks = await prisma.rank.findMany({
-    orderBy: { order: 'asc' }
-  });
+  const ranks = await db.orm.public.Rank
+    .orderBy((r) => r.order.asc())
+    .all();
 
   if (ranks.length === 0) {
     return {
@@ -159,9 +156,9 @@ export async function calculateUserRank(userId: string): Promise<UserRank> {
  * Get all ranks for admin management
  */
 export async function getAllRanks(): Promise<RankResponse[]> {
-  const ranks = await prisma.rank.findMany({
-    orderBy: { order: 'asc' }
-  });
+  const ranks = await db.orm.public.Rank
+    .orderBy((r) => r.order.asc())
+    .all();
   
   // Convert BigInt to string for JSON serialization
   return ranks.map(rank => ({
@@ -175,9 +172,7 @@ export async function getAllRanks(): Promise<RankResponse[]> {
  * Create a new rank
  */
 export async function createRank(rankData: Omit<Rank, 'id' | 'createdAt' | 'updatedAt'>): Promise<RankResponse> {
-  const rank = await prisma.rank.create({
-    data: rankData
-  });
+  const rank = await db.orm.public.Rank.create(rankData);
   
   return {
     ...rank,
@@ -190,10 +185,11 @@ export async function createRank(rankData: Omit<Rank, 'id' | 'createdAt' | 'upda
  * Update an existing rank
  */
 export async function updateRank(id: string, rankData: Partial<Omit<Rank, 'id' | 'createdAt' | 'updatedAt'>>): Promise<RankResponse> {
-  const rank = await prisma.rank.update({
-    where: { id },
-    data: rankData
-  });
+  const rank = await db.orm.public.Rank.where({ id }).update(rankData);
+  
+  if (!rank) {
+    throw new Error(`Rank not found: ${id}`);
+  }
   
   return {
     ...rank,
@@ -206,18 +202,14 @@ export async function updateRank(id: string, rankData: Partial<Omit<Rank, 'id' |
  * Delete a rank
  */
 export async function deleteRank(id: string): Promise<void> {
-  await prisma.rank.delete({
-    where: { id }
-  });
+  await db.orm.public.Rank.where({ id }).delete();
 }
 
 /**
  * Get rank by ID
  */
 export async function getRankById(id: string): Promise<RankResponse | null> {
-  const rank = await prisma.rank.findUnique({
-    where: { id }
-  });
+  const rank = await db.orm.public.Rank.where({ id }).first();
   
   if (!rank) return null;
   
@@ -232,7 +224,7 @@ export async function getRankById(id: string): Promise<RankResponse | null> {
  * Check if ranks are enabled
  */
 export async function areRanksEnabled(): Promise<boolean> {
-  const config = await prisma.config.findFirst();
+  const config = await db.orm.public.Config.first();
   return config?.ranksEnabled ?? false;
 }
 
@@ -240,7 +232,5 @@ export async function areRanksEnabled(): Promise<boolean> {
  * Enable or disable the rank system
  */
 export async function setRanksEnabled(enabled: boolean): Promise<void> {
-  await prisma.config.updateMany({
-    data: { ranksEnabled: enabled }
-  });
+  await db.orm.public.Config.where({}).updateAndCount({ ranksEnabled: enabled });
 } 

@@ -1,7 +1,10 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import parseTorrent from 'parse-torrent';
 import bencode from 'bencode';
-import { prisma } from '../lib/prisma.js';
+import { db } from '../lib/prisma.js';
+import { convertBigInts } from '../lib/serialization.js';
+import { toTimestamp, parseTimestamp } from '../lib/timestamps.js';
+import { or } from '@prisma/orm-postgres/orm-client';
 import { requireTorrentApproval } from '../services/configService.js';
 import { saveFile, getFile } from '../services/fileStorageService.js';
 import { getConfig } from '../services/configService.js';
@@ -18,20 +21,22 @@ export async function voteTorrentHandler(request: FastifyRequest, reply: Fastify
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   const { id } = request.params as any;
   const { type } = request.body as any; // 'up' | 'down'
-  const torrent = await prisma.torrent.findUnique({ where: { id } });
+  const torrent = await db.orm.public.Torrent.where({ id }).first();
   if (!torrent) return reply.status(404).send({ error: 'Torrent not found' });
   const value = type === 'up' ? 1 : type === 'down' ? -1 : 0;
   if (value === 0) return reply.status(400).send({ error: 'Invalid vote type' });
   
   // Get existing vote to determine if it's a change
-  const existingVote = await prisma.torrentVote.findUnique({
-    where: { userId_torrentId: { userId: user.id, torrentId: id } }
-  });
+  const existingVote = await db.orm.public.TorrentVote
+    .where({ userId: user.id, torrentId: id })
+    .first();
   
-  await prisma.torrentVote.upsert({
-    where: { userId_torrentId: { userId: user.id, torrentId: id } },
-    update: { value },
+  await db.orm.public.TorrentVote.upsert({
     create: { userId: user.id, torrentId: id, value },
+    update: { value },
+    // The composite unique key is recorded as a unique index; the runtime
+    // resolves the given field names to columns for `ON CONFLICT`.
+    conflictOn: { userId: user.id, torrentId: id } as any,
   });
   
   // Create smart activity only if it's a new vote or a change in vote type
@@ -56,7 +61,7 @@ export async function createMagnetTokenHandler(request: FastifyRequest, reply: F
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   
   const { id } = request.params as any;
-  const torrent = await prisma.torrent.findUnique({ where: { id } });
+  const torrent = await db.orm.public.Torrent.where({ id }).first();
   if (!torrent || !torrent.isApproved) {
     return reply.status(404).send({ error: 'Torrent not found' });
   }
@@ -66,13 +71,11 @@ export async function createMagnetTokenHandler(request: FastifyRequest, reply: F
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
   
   // Store token in database
-  const _magnetToken = await prisma.downloadToken.create({
-    data: {
-      token,
-      userId: user.id,
-      torrentId: torrent.id,
-      expiresAt
-    }
+  const _magnetToken = await db.orm.public.DownloadToken.create({
+    token,
+    userId: user.id,
+    torrentId: torrent.id,
+    expiresAt: toTimestamp(expiresAt.toISOString())
   });
   
   // Return temporary magnet URL with auto-detected protocol
@@ -93,22 +96,6 @@ function getBaseUrlFromRequest(request: FastifyRequest): string {
                    (request.headers['x-forwarded-ssl'] === 'on' ? 'https' : 'http');
   const host = request.headers.host || 'localhost:3001';
   return `${protocol}://${host}`;
-}
-
-// Helper to convert BigInt fields to strings recursively
-function convertBigInts(obj: any): any {
-  // Preserve Date instances so they serialize correctly as ISO strings
-  if (obj instanceof Date) {
-    return obj;
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(convertBigInts);
-  } else if (obj && typeof obj === 'object') {
-    return Object.fromEntries(
-      Object.entries(obj).map(([k, v]) => [k, typeof v === 'bigint' ? v.toString() : convertBigInts(v)])
-    );
-  }
-  return obj;
 }
 
 // Helper to normalize S3 config fields (null -> undefined)
@@ -217,7 +204,7 @@ export async function uploadTorrentHandler(request: FastifyRequest, reply: Fasti
     return reply.status(400).send({ error: 'Category is required' });
   }
   // Validate category exists
-  const category = await prisma.category.findUnique({ where: { id: categoryId } });
+  const category = await db.orm.public.Category.where({ id: categoryId }).first();
   if (!category) {
     console.log('[uploadTorrentHandler] Invalid category');
     return reply.status(400).send({ error: 'Invalid category' });
@@ -336,24 +323,22 @@ export async function uploadTorrentHandler(request: FastifyRequest, reply: Fasti
   // Parse isAnonymous field (default to false if not provided)
   const isAnonymous = isAnonymousField === 'true' || isAnonymousField === true;
 
-  const torrent = await prisma.torrent.create({
-    data: {
-      infoHash: parsed.infoHash,
-      name: String(name),
-      description: description ? String(description) : null,
-      uploaderId: user.id,
-      filePath: torrentUploaded.id, // store UploadedFile id
-      nfoPath: nfoUploaded ? nfoUploaded.id : undefined, // store UploadedFile id
-      size: typeof parsed === 'object' && 'length' in parsed && typeof parsed.length === 'number' ? parsed.length : 0,
-      isApproved,
-      categoryId: category.id,
-      posterFileId: posterFileUploaded ? posterFileUploaded.id : undefined,
-      posterUrl: posterUrl || null,
-      tags: tags,
-      freeleech: freeleech,
-      isAnonymous: isAnonymous
-    } as any
-  });
+  const torrent = await db.orm.public.Torrent.create({
+    infoHash: parsed.infoHash,
+    name: String(name),
+    description: description ? String(description) : null,
+    uploaderId: user.id,
+    filePath: torrentUploaded.id, // store UploadedFile id
+    nfoPath: nfoUploaded ? nfoUploaded.id : undefined, // store UploadedFile id
+    size: typeof parsed === 'object' && 'length' in parsed && typeof parsed.length === 'number' ? BigInt(parsed.length) : 0n,
+    isApproved,
+    categoryId: category.id,
+    posterFileId: posterFileUploaded ? posterFileUploaded.id : undefined,
+    posterUrl: posterUrl || null,
+    tags: tags,
+    freeleech: freeleech,
+    isAnonymous: isAnonymous
+  } as any);
   console.log('[uploadTorrentHandler] Torrent created:', torrent.id);
 
   // Create activity for torrent upload
@@ -383,7 +368,7 @@ async function modifyTorrentAnnounceUrls(torrentBuffer: Buffer, passkey: string,
     // Re-encode the torrent
     const encoded = bencode.encode(modifiedTorrent);
     
-    return encoded;
+    return Buffer.from(encoded);
   } catch (err) {
     console.error('[modifyTorrentAnnounceUrls] Error modifying torrent:', err);
     // Return original buffer if modification fails
@@ -394,33 +379,20 @@ async function modifyTorrentAnnounceUrls(torrentBuffer: Buffer, passkey: string,
 export async function getTorrentHandler(request: FastifyRequest, reply: FastifyReply) {
   const { id } = request.params as any;
   const user = (request as any).user;
-  const torrent = await prisma.torrent.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      infoHash: true,
-      size: true,
-      createdAt: true,
-      updatedAt: true,
-      isApproved: true,
-      isRejected: true,
-      rejectionReason: true,
-      rejectedAt: true,
-      freeleech: true,
-      isAnonymous: true,
-      posterUrl: true,
-      tags: true,
-      filePath: true,
-      uploaderId: true,
-      categoryId: true,
-      uploader: { select: { id: true, username: true, upload: true, download: true, avatarUrl: true } },
-      category: { select: { name: true } },
-      rejectedBy: { select: { id: true, username: true } },
-      _count: { select: { bookmarks: true, comments: true } }
-    } as any
-  }) as any;
+  const torrent = await db.orm.public.Torrent
+    .select(
+      'id', 'name', 'description', 'infoHash', 'size', 'createdAt', 'updatedAt',
+      'isApproved', 'isRejected', 'rejectionReason', 'rejectedAt', 'freeleech',
+      'isAnonymous', 'posterUrl', 'tags', 'filePath', 'uploaderId', 'categoryId'
+    )
+    .include('uploader', (u) => u.select('id', 'username', 'upload', 'download', 'avatarUrl'))
+    .include('category', (c) => c.select('name'))
+    .include('rejectedBy', (r) => r.select('id', 'username'))
+    // `_count` is expressed as relation-count reducers; they surface as scalar
+    // fields (`bookmarks`/`comments`) and are folded back into `_count` below.
+    .include('bookmarks', (b) => b.count())
+    .include('comments', (c) => c.count())
+    .first({ id }) as any;
   if (!torrent) return reply.status(404).send({ error: 'Torrent not found' });
   // Allow viewing pending torrents to uploader and staff
   if (!torrent.isApproved) {
@@ -447,7 +419,7 @@ export async function getTorrentHandler(request: FastifyRequest, reply: FastifyR
   // Attach parsed files from .torrent for UI
   try {
     const config = normalizeS3Config(await getConfig());
-    const file = await prisma.uploadedFile.findUnique({ where: { id: torrent.filePath } });
+    const file = await db.orm.public.UploadedFile.where({ id: torrent.filePath }).first();
     if (file) {
       const buf = await getFile({ file, config });
       const parsed = await parseTorrent(buf);
@@ -471,9 +443,12 @@ export async function getTorrentHandler(request: FastifyRequest, reply: FastifyR
     (result as any).files = [];
   }
   // Attach counts
-  if ((torrent as any)._count) {
-    (result as any)._count = (torrent as any)._count;
-  }
+  result._count = {
+    bookmarks: (torrent as any).bookmarks,
+    comments: (torrent as any).comments
+  };
+  delete (result as any).bookmarks;
+  delete (result as any).comments;
   // Enrich uploader details with ratio and byte stats as strings
   if (torrent.uploader) {
     // Check if torrent is anonymous and user is not the uploader or staff
@@ -510,11 +485,11 @@ export async function getTorrentHandler(request: FastifyRequest, reply: FastifyR
   
   // Add bookmarked property if user is logged in (user may be attached in OPEN mode)
   if (user && user.id) {
-    const bookmark = await prisma.bookmark.findUnique({ where: { userId_torrentId: { userId: user.id, torrentId: id } } });
+    const bookmark = await db.orm.public.Bookmark.where({ userId: user.id, torrentId: id }).first();
     result.bookmarked = !!bookmark;
     // Also include current user's vote for this torrent for persistence in UI
     try {
-      const tv = await (prisma as any).torrentVote.findUnique({ where: { userId_torrentId: { userId: user.id, torrentId: id } } });
+      const tv = await db.orm.public.TorrentVote.where({ userId: user.id, torrentId: id }).first();
       result.userVote = tv ? (tv.value === 1 ? 'up' : tv.value === -1 ? 'down' : null) : null;
     } catch {
       result.userVote = null;
@@ -529,7 +504,7 @@ export async function getTorrentHandler(request: FastifyRequest, reply: FastifyR
 export async function getNfoHandler(request: FastifyRequest, reply: FastifyReply) {
   const { id } = request.params as any;
   const user = (request as any).user;
-  const torrent = await prisma.torrent.findUnique({ where: { id } });
+  const torrent = await db.orm.public.Torrent.where({ id }).first();
   if (!torrent) {
     return reply.status(404).send({ error: 'NFO not found' });
   }
@@ -540,7 +515,7 @@ export async function getNfoHandler(request: FastifyRequest, reply: FastifyReply
   }
   if (!torrent.nfoPath) return reply.status(404).send({ error: 'NFO not found' });
   const config = normalizeS3Config(await getConfig());
-  const file = await prisma.uploadedFile.findUnique({ where: { id: torrent.nfoPath } });
+  const file = await db.orm.public.UploadedFile.where({ id: torrent.nfoPath }).first();
   if (!file) return reply.status(404).send({ error: 'NFO file not found' });
   try {
     const nfoBuffer = await getFile({ file, config });
@@ -562,16 +537,17 @@ export async function approveTorrentHandler(request: FastifyRequest, reply: Fast
     return reply.status(403).send({ error: 'Forbidden' });
   }
   const { id } = request.params as any;
-  const torrent = await prisma.torrent.findUnique({ where: { id } });
+  const torrent = await db.orm.public.Torrent.where({ id }).first();
   if (!torrent) return reply.status(404).send({ error: 'Torrent not found' });
   
   try {
-    const updated = await prisma.torrent.update({ where: { id }, data: { isApproved: true } });
+    const updated = await db.orm.public.Torrent.where({ id }).update({ isApproved: true });
+    if (!updated) throw new Error('Torrent not found');
     
     // Notify uploader (don't fail the approval if notification fails)
     if (torrent.uploaderId) {
       try {
-        const uploader = await prisma.user.findUnique({ where: { id: torrent.uploaderId } });
+        const uploader = await db.orm.public.User.where({ id: torrent.uploaderId }).first();
         if (uploader) {
           const { text, html } = getTorrentApprovedEmail({ username: uploader.username, torrentName: torrent.name });
           await createNotification({
@@ -627,18 +603,10 @@ export async function rejectTorrentHandler(request: FastifyRequest, reply: Fasti
     
     console.log('Processing rejection for torrent:', id, 'with reason:', reason);
   
-  const torrent = await prisma.torrent.findUnique({ 
-    where: { id },
-    include: {
-      uploader: {
-        select: {
-          id: true,
-          username: true,
-          email: true
-        }
-      }
-    }
-  });
+  const torrent = await db.orm.public.Torrent
+    .where({ id })
+    .include('uploader', (u) => u.select('id', 'username', 'email'))
+    .first();
   
   if (!torrent) return reply.status(404).send({ error: 'Torrent not found' });
   
@@ -647,14 +615,15 @@ export async function rejectTorrentHandler(request: FastifyRequest, reply: Fasti
   }
   
   // Update torrent status to rejected using raw SQL to avoid Prisma client issues
-  await prisma.$executeRaw`
+  const rejectPlan = db.raw.sql`
     UPDATE "Torrent" 
     SET "isRejected" = true, 
         "rejectionReason" = ${reason || null}, 
         "rejectedById" = ${user.id}, 
-        "rejectedAt" = ${new Date()}
-    WHERE id = ${id}
-  `;
+        "rejectedAt" = ${toTimestamp(new Date().toISOString())}
+    WHERE "id" = ${id}
+  `.affectedCount().build();
+  await db.runtime().execute(rejectPlan);
   
   // Notify uploader (don't fail the rejection if notification fails)
   if (torrent.uploader) {
@@ -697,58 +666,37 @@ export async function listAllTorrentsHandler(request: FastifyRequest, reply: Fas
   const take = Math.min(Number(limit) || 20, 100);
   const skip = (Number(page) - 1) * take;
   
-  const where: any = {};
+  let torrentQuery: any = db.orm.public.Torrent;
   
   // Filter by approval status
   if (status === 'approved') {
-    where.isApproved = true;
-    (where as any).isRejected = false;
+    torrentQuery = torrentQuery.where({ isApproved: true, isRejected: false });
   } else if (status === 'pending') {
-    where.isApproved = false;
-    (where as any).isRejected = false;
+    torrentQuery = torrentQuery.where({ isApproved: false, isRejected: false });
   } else if (status === 'rejected') {
-    (where as any).isRejected = true;
+    torrentQuery = torrentQuery.where({ isRejected: true });
   }
   // If no status filter, show all
   
   // Search filter
   if (q) {
-    where.OR = [
-      { name: { contains: q, mode: 'insensitive' } },
-      { description: { contains: q, mode: 'insensitive' } }
-    ];
+    torrentQuery = torrentQuery.where((m: any) =>
+      or(m.name.ilike(`%${q}%`), m.description.ilike(`%${q}%`))
+    );
   }
   
-  const [torrents, total] = await Promise.all([
-    (prisma.torrent as any).findMany({
-      where,
-      skip,
-      take,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        uploader: {
-          select: {
-            id: true,
-            username: true,
-            role: true
-          }
-        },
-        rejectedBy: {
-          select: {
-            id: true,
-            username: true
-          }
-        },
-        category: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      }
-    }),
-    prisma.torrent.count({ where })
+  const [torrents, totalResult] = await Promise.all([
+    torrentQuery
+      .orderBy((m: any) => m.createdAt.desc())
+      .offset(skip)
+      .limit(take)
+      .include('uploader', (u: any) => u.select('id', 'username', 'role'))
+      .include('rejectedBy', (r: any) => r.select('id', 'username'))
+      .include('category', (c: any) => c.select('id', 'name'))
+      .all(),
+    torrentQuery.aggregate((a: any) => ({ n: a.count() }))
   ]);
+  const total = totalResult.n;
 
   // Calculate stats for each torrent
   const torrentsWithStats = await Promise.all(
@@ -783,15 +731,15 @@ export async function getTorrentStatsHandler(request: FastifyRequest, reply: Fas
   }
   
   const [totalTorrents, approvedTorrents, pendingTorrents] = await Promise.all([
-    prisma.torrent.count(),
-    prisma.torrent.count({ where: { isApproved: true } }),
-    prisma.torrent.count({ where: { isApproved: false } })
+    db.orm.public.Torrent.aggregate((a) => ({ n: a.count() })),
+    db.orm.public.Torrent.where({ isApproved: true }).aggregate((a) => ({ n: a.count() })),
+    db.orm.public.Torrent.where({ isApproved: false }).aggregate((a) => ({ n: a.count() }))
   ]);
   
   return reply.send({
-    total: totalTorrents,
-    approved: approvedTorrents,
-    pending: pendingTorrents
+    total: totalTorrents.n,
+    approved: approvedTorrents.n,
+    pending: pendingTorrents.n
   });
 }
 
@@ -803,15 +751,15 @@ export async function recalculateUserStatsHandler(request: FastifyRequest, reply
 
   try {
     // Get all users
-    const users = await prisma.user.findMany();
+    const users = await db.orm.public.User.all();
     const results = [];
 
     for (const userRecord of users) {
       // Get all announces for this user, grouped by peerId
-      const announces = await prisma.announce.findMany({
-        where: { userId: userRecord.id },
-        orderBy: { lastAnnounceAt: 'asc' }
-      });
+      const announces = await db.orm.public.Announce
+        .where({ userId: userRecord.id })
+        .orderBy((a) => a.lastAnnounceAt.asc())
+        .all();
 
       let totalUpload = BigInt(0);
       let totalDownload = BigInt(0);
@@ -827,7 +775,7 @@ export async function recalculateUserStatsHandler(request: FastifyRequest, reply
 
       // Calculate totals for each peer
       for (const [, peerAnnounces] of Object.entries(peerGroups)) {
-        peerAnnounces.sort((a, b) => a.lastAnnounceAt.getTime() - b.lastAnnounceAt.getTime());
+        peerAnnounces.sort((a, b) => parseTimestamp(a.lastAnnounceAt) - parseTimestamp(b.lastAnnounceAt));
         
         let lastUploaded = BigInt(0);
         let lastDownloaded = BigInt(0);
@@ -845,13 +793,11 @@ export async function recalculateUserStatsHandler(request: FastifyRequest, reply
       }
 
       // Update user record
-      await prisma.user.update({
-        where: { id: userRecord.id },
-        data: {
-          upload: totalUpload,
-          download: totalDownload
-        }
+      const updatedUser = await db.orm.public.User.where({ id: userRecord.id }).update({
+        upload: totalUpload,
+        download: totalDownload
       });
+      if (!updatedUser) throw new Error('User not found');
 
       results.push({
         userId: userRecord.id,
@@ -878,7 +824,7 @@ export async function createDownloadTokenHandler(request: FastifyRequest, reply:
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   
   const { id } = request.params as any;
-  const torrent = await prisma.torrent.findUnique({ where: { id } });
+  const torrent = await db.orm.public.Torrent.where({ id }).first();
   if (!torrent || !torrent.isApproved) {
     return reply.status(404).send({ error: 'Torrent not found' });
   }
@@ -888,13 +834,11 @@ export async function createDownloadTokenHandler(request: FastifyRequest, reply:
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
   
   // Store token in database
-  const _downloadToken = await prisma.downloadToken.create({
-    data: {
-      token,
-      userId: user.id,
-      torrentId: torrent.id,
-      expiresAt
-    }
+  const _downloadToken = await db.orm.public.DownloadToken.create({
+    token,
+    userId: user.id,
+    torrentId: torrent.id,
+    expiresAt: toTimestamp(expiresAt.toISOString())
   });
   
   // Return temporary download URL
@@ -917,10 +861,11 @@ export async function downloadTorrentWithTokenHandler(request: FastifyRequest, r
   }
   
   // Find and validate download token
-  const downloadToken = await prisma.downloadToken.findUnique({
-    where: { token },
-    include: { user: true, torrent: true }
-  });
+  const downloadToken = await db.orm.public.DownloadToken
+    .where({ token })
+    .include('user')
+    .include('torrent')
+    .first();
   
   if (!downloadToken) {
     return reply.status(401).send({ error: 'Invalid download token' });
@@ -930,7 +875,7 @@ export async function downloadTorrentWithTokenHandler(request: FastifyRequest, r
     return reply.status(401).send({ error: 'Download token already used' });
   }
   
-  if (downloadToken.expiresAt < new Date()) {
+  if (parseTimestamp(downloadToken.expiresAt) < Date.now()) {
     return reply.status(401).send({ error: 'Download token expired' });
   }
   
@@ -939,14 +884,11 @@ export async function downloadTorrentWithTokenHandler(request: FastifyRequest, r
   }
   
   // Mark token as used
-  await prisma.downloadToken.update({
-    where: { id: downloadToken.id },
-    data: { used: true }
-  });
+  await db.orm.public.DownloadToken.where({ id: downloadToken.id }).update({ used: true });
   
   // Get torrent file
   const config = normalizeS3Config(await getConfig());
-  const file = await prisma.uploadedFile.findUnique({ where: { id: downloadToken.torrent.filePath } });
+  const file = await db.orm.public.UploadedFile.where({ id: downloadToken.torrent.filePath }).first();
   if (!file) return reply.status(404).send({ error: 'Torrent file not found' });
   
   try {
@@ -977,10 +919,11 @@ export async function generateMagnetWithTokenHandler(request: FastifyRequest, re
   }
   
   // Find and validate magnet token
-  const magnetToken = await prisma.downloadToken.findUnique({
-    where: { token },
-    include: { user: true, torrent: true }
-  });
+  const magnetToken = await db.orm.public.DownloadToken
+    .where({ token })
+    .include('user')
+    .include('torrent')
+    .first();
   
   if (!magnetToken) {
     return reply.status(401).send({ error: 'Invalid magnet token' });
@@ -990,7 +933,7 @@ export async function generateMagnetWithTokenHandler(request: FastifyRequest, re
     return reply.status(401).send({ error: 'Magnet token already used' });
   }
   
-  if (magnetToken.expiresAt < new Date()) {
+  if (parseTimestamp(magnetToken.expiresAt) < Date.now()) {
     return reply.status(401).send({ error: 'Magnet token expired' });
   }
   
@@ -999,10 +942,7 @@ export async function generateMagnetWithTokenHandler(request: FastifyRequest, re
   }
   
   // Mark token as used
-  await prisma.downloadToken.update({
-    where: { id: magnetToken.id },
-    data: { used: true }
-  });
+  await db.orm.public.DownloadToken.where({ id: magnetToken.id }).update({ used: true });
   
   // Generate magnet link with user's passkey using auto-detected protocol
   const baseUrl = getBaseUrlFromRequest(request);
@@ -1013,7 +953,7 @@ export async function generateMagnetWithTokenHandler(request: FastifyRequest, re
   let additionalParams = '';
   try {
     const config = normalizeS3Config(await getConfig());
-    const file = await prisma.uploadedFile.findUnique({ where: { id: magnetToken.torrent.filePath } });
+    const file = await db.orm.public.UploadedFile.where({ id: magnetToken.torrent.filePath }).first();
     if (file) {
       const torrentBuffer = await getFile({ file, config });
       const parsed = await parseTorrent(torrentBuffer);
@@ -1052,7 +992,7 @@ export async function generateMagnetWithTokenHandler(request: FastifyRequest, re
   // Try to get the original announce URL from the torrent file
   try {
     const config = normalizeS3Config(await getConfig());
-    const file = await prisma.uploadedFile.findUnique({ where: { id: magnetToken.torrent.filePath } });
+    const file = await db.orm.public.UploadedFile.where({ id: magnetToken.torrent.filePath }).first();
     if (file) {
       const torrentBuffer = await getFile({ file, config });
       const parsed = await parseTorrent(torrentBuffer);
@@ -1139,10 +1079,10 @@ export async function editTorrentHandler(request: FastifyRequest, reply: Fastify
   }
   
   // Check if torrent exists and is approved
-  const existingTorrent = await prisma.torrent.findUnique({
-    where: { id },
-    include: { category: true }
-  });
+  const existingTorrent = await db.orm.public.Torrent
+    .where({ id })
+    .include('category')
+    .first();
   
   if (!existingTorrent) {
     return reply.status(404).send({ error: 'Torrent not found' });
@@ -1153,28 +1093,24 @@ export async function editTorrentHandler(request: FastifyRequest, reply: Fastify
   }
   
   // Check if category exists
-  const category = await prisma.category.findUnique({ where: { id: categoryId } });
+  const category = await db.orm.public.Category.where({ id: categoryId }).first();
   if (!category) {
     return reply.status(400).send({ error: 'Invalid category' });
   }
   
   try {
     // Update torrent
-    const updatedTorrent = await prisma.torrent.update({
-      where: { id },
-      data: {
+    const updatedTorrent = await db.orm.public.Torrent
+      .where({ id })
+      .include('category')
+      .include('uploader', (u) => u.select('id', 'username', 'role'))
+      .update({
         name: name.trim(),
         description: description?.trim() || null,
         categoryId,
-        updatedAt: new Date()
-      },
-      include: {
-        category: true,
-        uploader: {
-          select: { id: true, username: true, role: true }
-        }
-      }
-    });
+        updatedAt: toTimestamp(new Date().toISOString())
+      });
+    if (!updatedTorrent) throw new Error('Torrent not found');
     
     // Create notification for uploader
     await createNotification({
@@ -1217,15 +1153,11 @@ export async function deleteTorrentHandler(request: FastifyRequest, reply: Fasti
   console.log('[deleteTorrentHandler] Processing deletion for torrent ID:', id);
   
   // Check if torrent exists
-  const existingTorrent = await prisma.torrent.findUnique({
-    where: { id },
-    include: { 
-      category: true,
-      uploader: {
-        select: { id: true, username: true, role: true }
-      }
-    }
-  });
+  const existingTorrent = await db.orm.public.Torrent
+    .where({ id })
+    .include('category')
+    .include('uploader', (u) => u.select('id', 'username', 'role'))
+    .first();
   
   console.log('[deleteTorrentHandler] Torrent lookup result:', existingTorrent ? {
     id: existingTorrent.id,
@@ -1244,24 +1176,17 @@ export async function deleteTorrentHandler(request: FastifyRequest, reply: Fasti
     
     // First, delete all related records to avoid foreign key constraint violations
     console.log('[deleteTorrentHandler] Deleting related bookmarks...');
-    await prisma.bookmark.deleteMany({
-      where: { torrentId: id }
-    });
+    await db.orm.public.Bookmark.where({ torrentId: id }).deleteAndCount();
     
     console.log('[deleteTorrentHandler] Deleting related votes...');
-    await prisma.torrentVote.deleteMany({
-      where: { torrentId: id }
-    });
+    await db.orm.public.TorrentVote.where({ torrentId: id }).deleteAndCount();
     
     console.log('[deleteTorrentHandler] Deleting related comments...');
-    await prisma.comment.deleteMany({
-      where: { torrentId: id }
-    });
+    await db.orm.public.Comment.where({ torrentId: id }).deleteAndCount();
     
     // Delete torrent (this will cascade to other related records)
-    await prisma.torrent.delete({
-      where: { id }
-    });
+    const deletedTorrent = await db.orm.public.Torrent.where({ id }).delete();
+    if (!deletedTorrent) throw new Error('Torrent not found');
     
     console.log('[deleteTorrentHandler] Torrent deleted successfully');
     
@@ -1304,91 +1229,70 @@ export async function listTorrentsHandler(request: FastifyRequest, reply: Fastif
   const { page = 1, limit = 20, q, categoryId, status, tag } = request.query as any;
   const take = Math.min(Number(limit) || 20, 100);
   const skip = (Number(page) - 1) * take;
-  const where: any = {};
+  let torrentQuery: any = db.orm.public.Torrent;
 
   // Handle status filtering
   if (status === 'approved') {
-    where.isApproved = true;
+    torrentQuery = torrentQuery.where({ isApproved: true });
   } else if (status === 'pending') {
-    where.isApproved = false;
-    where.isRejected = false;
+    torrentQuery = torrentQuery.where({ isApproved: false, isRejected: false });
   } else if (status === 'rejected') {
-    where.isRejected = true;
+    torrentQuery = torrentQuery.where({ isRejected: true });
   } else {
     // Default to approved torrents for public access
-    where.isApproved = true;
+    torrentQuery = torrentQuery.where({ isApproved: true });
   }
 
   // Handle search query
   if (q) {
-    where.OR = [
-      { name: { contains: q, mode: 'insensitive' } },
-      { description: { contains: q, mode: 'insensitive' } }
-    ];
+    torrentQuery = torrentQuery.where((m: any) =>
+      or(m.name.ilike(`%${q}%`), m.description.ilike(`%${q}%`))
+    );
   }
 
   // Handle category filtering
   if (categoryId && categoryId !== 'all') {
     // Try to find category by name first, then by ID
-    const category = await prisma.category.findFirst({
-      where: {
-        OR: [
-          { name: categoryId },
-          { id: categoryId }
-        ]
-      }
-    });
-    
+    const category = await db.orm.public.Category
+      .where((c: any) => or(c.name.eq(categoryId), c.id.eq(categoryId)))
+      .first();
+
     if (category) {
-      where.categoryId = category.id;
+      torrentQuery = torrentQuery.where({ categoryId: category.id });
     }
   }
 
   // Handle tag filtering
   if (tag) {
-    where.tags = {
-      has: tag
-    };
+    // This build has no ORM array-containment operator, so resolve the tagged
+    // torrent ids with raw SQL and constrain the main query to them.
+    const tagPlan = db.raw.sql`SELECT "id" FROM "Torrent" WHERE "tags" @> ARRAY[${tag}]::text[]`
+      .returnsRow({ id: 'pg/text@1' })
+      .build();
+    const taggedRows = await db.runtime().query(tagPlan);
+    const taggedIds = taggedRows.map((r: any) => r.id);
+    if (taggedIds.length === 0) {
+      return reply.send({ torrents: [], total: 0, page: Number(page), limit: take });
+    }
+    torrentQuery = torrentQuery.where((m: any) => m.id.in(taggedIds));
   }
 
-  const [torrents, total] = await Promise.all([
-    prisma.torrent.findMany({
-      where,
-      skip,
-      take,
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        infoHash: true,
-        size: true,
-        createdAt: true,
-        updatedAt: true,
-        uploaderId: true,
-        freeleech: true,
-        isAnonymous: true,
-        uploader: {
-          select: {
-            id: true,
-            username: true,
-            role: true
-          }
-        },
-        category: {
-          select: {
-            id: true,
-            name: true
-          }
-        }
-      } as any
-    }),
-    prisma.torrent.count({ where })
+  const [torrents, totalResult] = await Promise.all([
+    torrentQuery
+      .orderBy((m: any) => m.createdAt.desc())
+      .offset(skip)
+      .limit(take)
+      .select('id', 'name', 'description', 'infoHash', 'size', 'createdAt', 'updatedAt', 'uploaderId', 'freeleech', 'isAnonymous')
+      .include('uploader', (u: any) => u.select('id', 'username', 'role'))
+      .include('category', (c: any) => c.select('id', 'name'))
+      .all(),
+    torrentQuery.aggregate((a: any) => ({ n: a.count() }))
   ]);
+  const total = totalResult.n;
 
   // Calculate stats for each torrent
   const torrentsWithStats = await Promise.all(
-    torrents.map(async (torrent) => {
+    torrents.map(async (torrent: any) => {
       const [seederLeecherCounts, completedCount] = await Promise.all([
         getSeederLeecherCounts(torrent.id as any),
         getCompletedCount(torrent.id as any)

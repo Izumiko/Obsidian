@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { prisma } from '../lib/prisma.js';
-import { UploadedFile, Config } from '../generated/prisma/client.js';
+import { db } from '../lib/prisma.js';
+import type { models } from '../generated/prisma8/contract.js';
 import { randomUUID } from 'crypto';
 import {
   S3Client,
@@ -18,14 +18,15 @@ function getSubfolder(type: FileType) {
   return type + 's'; // e.g., 'torrents', 'nfos', 'images'
 }
 
-// Note: S3 config fields (s3Bucket, s3Region, s3AccessKeyId, s3SecretAccessKey) must be present in the config object.
-// If using Prisma's Config type, you may need to extend it or use type assertion.
+// Note: S3 config fields (s3Bucket, s3Region, s3AccessKeyId, s3SecretAccessKey) are part of the v8 Config row.
+type Config = typeof models.public.Config;
+type UploadedFile = Omit<typeof models.public.UploadedFile, 'torrentPoster' | 'userAvatar'>;
 
 type S3Config = {
-  s3Bucket?: string;
-  s3Region?: string;
-  s3AccessKeyId?: string;
-  s3SecretAccessKey?: string;
+  s3Bucket?: string | null;
+  s3Region?: string | null;
+  s3AccessKeyId?: string | null;
+  s3SecretAccessKey?: string | null;
 };
 
 function getS3Client(config: Config & S3Config) {
@@ -61,15 +62,13 @@ export async function saveFile({
     const filename = randomUUID() + ext;
     const filePath = path.join(dir, filename);
     await fs.writeFile(filePath, buffer);
-    return prisma.uploadedFile.create({
-      data: {
-        type,
-        ext,
-        storageKey: path.relative(UPLOAD_DIR, filePath),
-        size: buffer.length,
-        mimeType,
-        data: undefined
-      }
+    return await db.orm.public.UploadedFile.create({
+      type,
+      ext,
+      storageKey: path.relative(UPLOAD_DIR, filePath),
+      size: buffer.length,
+      mimeType,
+      data: undefined
     });
   }
   if (config.storageType === 'S3') {
@@ -84,30 +83,26 @@ export async function saveFile({
       Body: buffer,
       ContentType: mimeType,
     }));
-    return prisma.uploadedFile.create({
-      data: {
-        type,
-        ext,
-        storageKey: key,
-        size: buffer.length,
-        mimeType,
-        data: undefined
-      }
+    return await db.orm.public.UploadedFile.create({
+      type,
+      ext,
+      storageKey: key,
+      size: buffer.length,
+      mimeType,
+      data: undefined
     });
   }
   if (config.storageType === 'DB') {
-    const file = await prisma.uploadedFile.create({
-      data: {
-        type,
-        ext,
-        storageKey: '', // Not needed for DB, can use id
-        size: buffer.length,
-        mimeType,
-        data: new Uint8Array(buffer)
-      }
+    const file = await db.orm.public.UploadedFile.create({
+      type,
+      ext,
+      storageKey: '', // Not needed for DB, can use id
+      size: buffer.length,
+      mimeType,
+      data: new Uint8Array(buffer)
     });
     // Set storageKey to id for easy lookup
-    await prisma.uploadedFile.update({ where: { id: file.id }, data: { storageKey: file.id } });
+    await db.orm.public.UploadedFile.where({ id: file.id }).update({ storageKey: file.id });
     return { ...file, storageKey: file.id };
   }
   throw new Error('Unsupported storage type');
@@ -157,7 +152,7 @@ export async function deleteFile({
   if (config.storageType === 'LOCAL') {
     const absPath = path.join(UPLOAD_DIR, file.storageKey);
     await fs.unlink(absPath).catch(() => {});
-    await prisma.uploadedFile.delete({ where: { id: file.id } });
+    await db.orm.public.UploadedFile.where({ id: file.id }).delete();
     return;
   }
   if (config.storageType === 'S3') {
@@ -167,11 +162,11 @@ export async function deleteFile({
       Bucket: config.s3Bucket,
       Key: file.storageKey,
     }));
-    await prisma.uploadedFile.delete({ where: { id: file.id } });
+    await db.orm.public.UploadedFile.where({ id: file.id }).delete();
     return;
   }
   if (config.storageType === 'DB') {
-    await prisma.uploadedFile.delete({ where: { id: file.id } });
+    await db.orm.public.UploadedFile.where({ id: file.id }).delete();
     return;
   }
   throw new Error('Unsupported storage type');
