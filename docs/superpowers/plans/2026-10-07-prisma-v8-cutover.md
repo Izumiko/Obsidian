@@ -649,6 +649,13 @@ Each group below is one task. For every task:
 | `distinct: ['a']` | `.distinct("a")` (after `.select(...)`) |
 | `data: { n: { increment: k } }` | **No v8 equivalent on PostgreSQL.** Raw SQL: ``db.raw.sql`UPDATE "T" SET "n" = "n" + ${k} WHERE "id" = ${id}`.affectedCount().build()`` then `await db.runtime().execute(plan)` |
 | `DateTime` input (`Date`) | `TimestampString(3)` is a branded string: pass PostgreSQL text, cast with `as TimestampString<3>` (from `@prisma/orm-postgres/target/codec-types`) |
+| `select` + nested relation select / `findUnique` with `include` | `.select('a', 'b').include('rel', (r) => r.select('x', 'y')).first({ id })` (or `.all()`); chain `.include()` before the write terminal for writes |
+| Relation `_count` select | `.include('rel', (r) => r.count())` — the reducer surfaces as a scalar field on the parent (`bookmarks: number`), not a nested `_count` object; fold it into `_count` at the response boundary and delete the raw fields |
+| `where: { listField: { has: v } }` (array containment) | **No ORM array-containment operator in this RC.** Resolve matching ids with ``db.raw.sql`SELECT "id" FROM "T" WHERE "col" @> ARRAY[${v}]::text[]`.returnsRow({ id: 'pg/text@1' }).build()`` + `db.runtime().query(plan)`, then `.where((m) => m.id.in(ids))`; short-circuit when `ids` is empty |
+| `where: { t: { contains: q, mode: 'insensitive' } }` | `.where((m) => m.t.ilike(\`%${q}%\`))` |
+| Insert/update of a `BigInt` column | v8's encoder rejects a JS `number` (`RUNTIME.ENCODE_FAILED`); pass a `bigint` (`BigInt(n)` / `0n`) |
+| `findUnique({ where: { a_b: { a, b } } })` | `.where({ a, b }).first()` |
+| `update({ data: { updatedAt: new Date() } })` | `updatedAt: toTimestamp(new Date().toISOString())`; likewise raw params that carried a `Date` now carry `toTimestamp(...)` |
 
 Referenced relation (inferred contract uses `@@map` table names; model accessor stays the
 model name): `prisma.user` → `db.orm.public.User`.
