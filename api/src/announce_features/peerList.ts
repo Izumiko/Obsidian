@@ -1,14 +1,5 @@
 import { db } from '../lib/prisma.js';
-import type { TimestampString } from '@prisma/orm-postgres/target/codec-types';
-
-/**
- * The contract declares `timestamp(3)` columns as `TimestampString(3)`, which
- * is a branded string. Values are plain PostgreSQL text at runtime; the brand
- * only exists at the type level, so an explicit cast is how app code opts in.
- */
-function toTimestamp(value: string): TimestampString<3> {
-  return value as TimestampString<3>;
-}
+import { toTimestamp } from '../lib/timestamps.js';
 
 export async function getActivePeers(torrentId: string, excludePeerId: string, limit = 50) {
   const thirtyMinutesAgo = toTimestamp(new Date(Date.now() - 30 * 60 * 1000).toISOString());

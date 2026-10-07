@@ -1,20 +1,6 @@
 import { db } from '../lib/prisma.js';
 import { and, or } from '@prisma/orm-postgres/orm-client';
-import type { TimestampString } from '@prisma/orm-postgres/target/codec-types';
-
-/** Parse a PostgreSQL `timestamp without time zone` string as UTC milliseconds. */
-function parseTimestamp(value: string): number {
-  return Date.parse(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`);
-}
-
-/**
- * The contract declares `timestamp(3)` columns as `TimestampString(3)`, which
- * is a branded string. Values are plain PostgreSQL text at runtime; the brand
- * only exists at the type level, so an explicit cast is how app code opts in.
- */
-function toTimestamp(value: string): TimestampString<3> {
-  return value as TimestampString<3>;
-}
+import { toTimestamp, parseTimestamp } from '../lib/timestamps.js';
 
 export async function checkGhostLeeching(config: any, params: any): Promise<string | null> {
   if (!config.enableGhostLeechingCheck) return null;
