@@ -1,41 +1,48 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
 
 function isAdminOrOwner(user: any) {
   return user && (user.role === 'ADMIN' || user.role === 'OWNER' || user.role === 'FOUNDER');
 }
 
+/**
+ * The v8 relation-count reducer surfaces as a scalar field on the row
+ * (`torrents: number`, `requests: number`) instead of the v7 `_count` object.
+ * Fold those back into `_count` so the response shape is unchanged. Applied to
+ * both root categories and their nested children.
+ */
+function foldCategoryCounts(category: any) {
+  if (!category) return category;
+  const { torrents, requests, children, ...rest } = category;
+  return {
+    ...rest,
+    children: Array.isArray(children)
+      ? children.map((child: any) => {
+          const { torrents: childTorrents, requests: childRequests, ...childRest } = child;
+          return { ...childRest, _count: { torrents: childTorrents, requests: childRequests } };
+        })
+      : children,
+    _count: { torrents, requests },
+  };
+}
+
 export async function listCategoriesHandler(request: FastifyRequest, reply: FastifyReply) {
   const user = (request as any).user;
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
-  const categories = await prisma.category.findMany({
-    where: { parentId: null },
-    include: { 
-      children: {
-        include: {
-          _count: {
-            select: {
-              torrents: true,
-              requests: true
-            }
-          }
-        },
-        orderBy: {
-          order: 'asc'
-        }
-      },
-      _count: {
-        select: {
-          torrents: true,
-          requests: true
-        }
-      }
-    },
-    orderBy: {
-      order: 'asc'
-    }
-  });
-  return reply.send(categories);
+  const categories = await db.orm.public.Category
+    .where({ parentId: null })
+    .orderBy((m: any) => m.order.asc())
+    .include('children', (c: any) =>
+      c
+        .orderBy((x: any) => x.order.asc())
+        .include('torrents', (t: any) => t.count())
+        .include('requests', (r: any) => r.count())
+    )
+    .include('torrents', (t: any) => t.count())
+    .include('requests', (r: any) => r.count())
+    .all();
+  return reply.send(convertBigInts(categories.map(foldCategoryCounts)));
 }
 
 export async function createCategoryHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -47,17 +54,16 @@ export async function createCategoryHandler(request: FastifyRequest, reply: Fast
   // If no order is provided, assign the next available order
   let finalOrder = order;
   if (finalOrder === undefined || finalOrder === null) {
-    const maxOrder = await prisma.category.aggregate({
-      where: { parentId: parentId || null },
-      _max: { order: true }
-    });
-    finalOrder = (maxOrder._max.order ?? -1) + 1;
+    const maxOrder: any = await db.orm.public.Category
+      .where({ parentId: parentId || null })
+      .aggregate((a: any) => ({ maxOrder: a.max('order') }));
+    finalOrder = (maxOrder.maxOrder ?? -1) + 1;
   }
   
-  const category = await prisma.category.create({
-    data: { name, description, icon, order: finalOrder, parentId }
+  const category = await db.orm.public.Category.create({
+    name, description, icon, order: finalOrder, parentId
   });
-  return reply.status(201).send(category);
+  return reply.status(201).send(convertBigInts(category));
 }
 
 export async function updateCategoryHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -65,11 +71,11 @@ export async function updateCategoryHandler(request: FastifyRequest, reply: Fast
   if (!isAdminOrOwner(user)) return reply.status(403).send({ error: 'Forbidden' });
   const { id } = request.params as any;
   const { name, description, icon, order, parentId } = request.body as any;
-  const updated = await prisma.category.update({
-    where: { id },
-    data: { name, description, icon, order, parentId }
+  const updated = await db.orm.public.Category.where({ id }).update({
+    name, description, icon, order, parentId
   });
-  return reply.send(updated);
+  if (!updated) throw new Error('Category not found');
+  return reply.send(convertBigInts(updated));
 }
 
 export async function deleteCategoryHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -79,10 +85,10 @@ export async function deleteCategoryHandler(request: FastifyRequest, reply: Fast
   const { cascade } = (request.body as any) || {};
 
   // Load category and immediate children
-  const category = await prisma.category.findUnique({
-    where: { id },
-    include: { children: { select: { id: true } } }
-  });
+  const category: any = await db.orm.public.Category
+    .where({ id })
+    .include('children', (c: any) => c.select('id'))
+    .first();
   if (!category) return reply.status(404).send({ error: 'Category not found' });
 
   // If it has children and cascade not confirmed, block and inform client
@@ -92,12 +98,13 @@ export async function deleteCategoryHandler(request: FastifyRequest, reply: Fast
 
   // Collect all descendant category IDs (including self)
   const idsToDelete: string[] = [category.id];
-  let queue: string[] = category.children.map((c) => c.id);
+  let queue: string[] = category.children.map((c: any) => c.id);
   while (queue.length > 0) {
-    const batch = await prisma.category.findMany({
-      where: { id: { in: queue } },
-      select: { id: true, children: { select: { id: true } } }
-    });
+    const batch: any[] = await db.orm.public.Category
+      .where((m: any) => m.id.in(queue))
+      .select('id')
+      .include('children', (c: any) => c.select('id'))
+      .all();
     const nextQueue: string[] = [];
     for (const item of batch) {
       idsToDelete.push(item.id);
@@ -106,11 +113,11 @@ export async function deleteCategoryHandler(request: FastifyRequest, reply: Fast
     queue = nextQueue;
   }
 
-  // Delete from leaves up using deleteMany (CategorySource rows will be removed due to FK ON DELETE CASCADE)
-  await prisma.$transaction([
-    prisma.categorySource.deleteMany({ where: { categoryId: { in: idsToDelete } } }),
-    prisma.category.deleteMany({ where: { id: { in: idsToDelete } } })
-  ]);
+  // Delete from leaves up using deleteAndCount (CategorySource rows will be removed due to FK ON DELETE CASCADE)
+  await db.transaction(async (tx) => {
+    await tx.orm.public.CategorySource.where((m: any) => m.categoryId.in(idsToDelete)).deleteAndCount();
+    await tx.orm.public.Category.where((m: any) => m.id.in(idsToDelete)).deleteAndCount();
+  });
 
   return reply.send({ success: true, deletedCount: idsToDelete.length });
 }
@@ -126,14 +133,13 @@ export async function reorderCategoriesHandler(request: FastifyRequest, reply: F
 
   try {
     // Update each category's order in a transaction
-    await prisma.$transaction(
-      categories.map((category: any, index: number) =>
-        prisma.category.update({
-          where: { id: category.id },
-          data: { order: index }
-        })
-      )
-    );
+    await db.transaction(async (tx) => {
+      for (let index = 0; index < categories.length; index++) {
+        const category = categories[index];
+        const updated = await tx.orm.public.Category.where({ id: category.id }).update({ order: index });
+        if (!updated) throw new Error(`Category not found: ${category.id}`);
+      }
+    });
 
     return reply.send({ success: true });
   } catch (error) {
@@ -154,12 +160,10 @@ export async function moveCategoryHandler(request: FastifyRequest, reply: Fastif
 
   try {
     // Get the category to move
-    const category = await prisma.category.findUnique({
-      where: { id: categoryId },
-      include: {
-        children: true
-      }
-    });
+    const category = await db.orm.public.Category
+      .where({ id: categoryId })
+      .include('children')
+      .first();
 
     if (!category) {
       return reply.status(404).send({ error: 'Category not found' });
@@ -174,9 +178,7 @@ export async function moveCategoryHandler(request: FastifyRequest, reply: Fastif
 
     // VALIDATION 2: If newParentId is provided, check if it's a root category (not a subcategory)
     if (newParentId) {
-      const newParent = await prisma.category.findUnique({
-        where: { id: newParentId }
-      });
+      const newParent = await db.orm.public.Category.where({ id: newParentId }).first();
 
       if (!newParent) {
         return reply.status(404).send({ error: 'Target parent category not found' });
@@ -197,9 +199,7 @@ export async function moveCategoryHandler(request: FastifyRequest, reply: Fastif
 
     // Check if moving would create a circular reference (category becoming parent of its own parent)
     if (newParentId) {
-      let currentParent = await prisma.category.findUnique({
-        where: { id: newParentId }
-      });
+      let currentParent = await db.orm.public.Category.where({ id: newParentId }).first();
       
       while (currentParent && currentParent.parentId) {
         if (currentParent.parentId === categoryId) {
@@ -207,72 +207,65 @@ export async function moveCategoryHandler(request: FastifyRequest, reply: Fastif
             error: 'Cannot move category: would create circular reference' 
           });
         }
-        currentParent = await prisma.category.findUnique({
-          where: { id: currentParent.parentId }
-        });
+        currentParent = await db.orm.public.Category.where({ id: currentParent.parentId }).first();
       }
     }
 
     const oldParentId = category.parentId;
     
     // Update the category with new parent and order
-    const updatedCategory = await prisma.category.update({
-      where: { id: categoryId },
-      data: { 
-        parentId: newParentId || null,
-        order: newOrder !== undefined ? newOrder : 0
-      }
+    const updatedCategory = await db.orm.public.Category.where({ id: categoryId }).update({ 
+      parentId: newParentId || null,
+      order: newOrder !== undefined ? newOrder : 0
     });
+    if (!updatedCategory) throw new Error('Category not found');
 
     // If we moved from one parent to another, or if forceReorder is true, we need to reorder both groups
     if (oldParentId !== newParentId || forceReorder) {
       // Reorder the old parent's children
       if (oldParentId) {
-        const oldSiblings = await prisma.category.findMany({
-          where: { parentId: oldParentId },
-          orderBy: { order: 'asc' }
-        });
+        const oldSiblings = await db.orm.public.Category
+          .where({ parentId: oldParentId })
+          .orderBy((m: any) => m.order.asc())
+          .all();
         
-        await prisma.$transaction(
-          oldSiblings.map((sibling, index) =>
-            prisma.category.update({
-              where: { id: sibling.id },
-              data: { order: index }
-            })
-          )
-        );
+        await db.transaction(async (tx) => {
+          for (let index = 0; index < oldSiblings.length; index++) {
+            const sibling = oldSiblings[index];
+            const updated = await tx.orm.public.Category.where({ id: sibling.id }).update({ order: index });
+            if (!updated) throw new Error(`Category not found: ${sibling.id}`);
+          }
+        });
       }
 
       // Reorder the new parent's children
       if (newParentId) {
-        const newSiblings = await prisma.category.findMany({
-          where: { parentId: newParentId },
-          orderBy: { order: 'asc' }
-        });
+        const newSiblings = await db.orm.public.Category
+          .where({ parentId: newParentId })
+          .orderBy((m: any) => m.order.asc())
+          .all();
         
-        await prisma.$transaction(
-          newSiblings.map((sibling, index) =>
-            prisma.category.update({
-              where: { id: sibling.id },
-              data: { order: index }
-            })
-          )
-        );
+        await db.transaction(async (tx) => {
+          for (let index = 0; index < newSiblings.length; index++) {
+            const sibling = newSiblings[index];
+            const updated = await tx.orm.public.Category.where({ id: sibling.id }).update({ order: index });
+            if (!updated) throw new Error(`Category not found: ${sibling.id}`);
+          }
+        });
       } else {
         // Moving to root level, reorder all root categories
-        const rootCategories = await prisma.category.findMany({
-          where: { parentId: null },
-          orderBy: { order: 'asc' }
-        });
+        const rootCategories = await db.orm.public.Category
+          .where({ parentId: null })
+          .orderBy((m: any) => m.order.asc())
+          .all();
         
-        await prisma.$transaction(
-          rootCategories.map((rootCat, index) =>
-            prisma.category.update({
-              where: { id: rootCat.id },
-              data: { order: index }
-            })
-          )
-        );
+        await db.transaction(async (tx) => {
+          for (let index = 0; index < rootCategories.length; index++) {
+            const rootCat = rootCategories[index];
+            const updated = await tx.orm.public.Category.where({ id: rootCat.id }).update({ order: index });
+            if (!updated) throw new Error(`Category not found: ${rootCat.id}`);
+          }
+        });
       }
     }
 
@@ -281,18 +274,18 @@ export async function moveCategoryHandler(request: FastifyRequest, reply: Fastif
       // sourcesOption: 'keep_and_inherit' | 'inherit_only' | 'keep_only'
       if (sourcesOption === 'inherit_only') {
         // Remove all own sources for the moved category and enable inheritance
-        await prisma.categorySource.deleteMany({ where: { categoryId } });
-        await prisma.category.update({ where: { id: categoryId }, data: { inheritSources: true } });
+        await db.orm.public.CategorySource.where({ categoryId }).deleteAndCount();
+        await db.orm.public.Category.where({ id: categoryId }).update({ inheritSources: true });
       } else if (sourcesOption === 'keep_only') {
         // Keep own sources only, disable inheritance
-        await prisma.category.update({ where: { id: categoryId }, data: { inheritSources: false } });
+        await db.orm.public.Category.where({ id: categoryId }).update({ inheritSources: false });
       } else if (sourcesOption === 'keep_and_inherit') {
         // Keep own sources and ensure inheritance enabled
-        await prisma.category.update({ where: { id: categoryId }, data: { inheritSources: true } });
+        await db.orm.public.Category.where({ id: categoryId }).update({ inheritSources: true });
       }
     }
 
-    return reply.send({ success: true, category: updatedCategory });
+    return reply.send({ success: true, category: convertBigInts(updatedCategory) });
   } catch (error) {
     console.error('Error moving category:', error);
     return reply.status(500).send({ error: 'Failed to move category' });
@@ -312,31 +305,31 @@ export async function getCategorySourcesHandler(request: FastifyRequest, reply: 
 
   try {
     // Load category and its own sources
-    const category = await prisma.category.findUnique({ where: { id } });
+    const category = await db.orm.public.Category.where({ id }).first();
     if (!category) return reply.status(404).send({ error: 'Category not found' });
 
-    const ownLinks = await prisma.categorySource.findMany({
-      where: { categoryId: id },
-      include: { source: true },
-      orderBy: { order: 'asc' },
-    });
+    const ownLinks = await db.orm.public.CategorySource
+      .where({ categoryId: id })
+      .include('source')
+      .orderBy((m: any) => m.order.asc())
+      .all();
 
     // Compute inherited only if inheritSources is true and the category has a parent
     const inherited: { id: string; name: string; isActive: boolean; order: number }[] = [];
     if (category.inheritSources && category.parentId) {
-      const ownIds = new Set(ownLinks.map((l) => l.sourceId));
+      const ownIds = new Set(ownLinks.map((l: any) => l.sourceId));
       // Traverse ancestor chain
       let currentParentId: string | null = category.parentId;
       const seen = new Set<string>();
       while (currentParentId) {
-        const parent: any = await prisma.category.findUnique({ where: { id: currentParentId } });
+        const parent: any = await db.orm.public.Category.where({ id: currentParentId }).first();
         if (!parent) break;
         // Parent own sources in order
-        const parentLinks = await prisma.categorySource.findMany({
-          where: { categoryId: currentParentId },
-          include: { source: true },
-          orderBy: { order: 'asc' },
-        });
+        const parentLinks = await db.orm.public.CategorySource
+          .where({ categoryId: currentParentId })
+          .include('source')
+          .orderBy((m: any) => m.order.asc())
+          .all();
         for (const link of parentLinks) {
           if (seen.has(link.sourceId) || ownIds.has(link.sourceId)) continue;
           seen.add(link.sourceId);
@@ -346,7 +339,7 @@ export async function getCategorySourcesHandler(request: FastifyRequest, reply: 
       }
     }
 
-    const own = ownLinks.map((l) => ({ id: l.source.id, name: l.source.name, isActive: l.source.isActive, order: l.order }));
+    const own = ownLinks.map((l: any) => ({ id: l.source.id, name: l.source.name, isActive: l.source.isActive, order: l.order }));
 
     return reply.send({ own, inherited });
   } catch (error) {
@@ -373,25 +366,27 @@ export async function addCategorySourceHandler(request: FastifyRequest, reply: F
   const sourceName = name.trim();
 
   try {
-    const category = await prisma.category.findUnique({ where: { id } });
+    const category = await db.orm.public.Category.where({ id }).first();
     if (!category) return reply.status(404).send({ error: 'Category not found' });
 
     // Does any own link already exist?
-    const existingOwn = await prisma.categorySource.findFirst({
-      where: { categoryId: id, source: { name: sourceName } },
-      include: { source: true },
-    });
+    const existingOwn = await db.orm.public.CategorySource
+      .where({ categoryId: id })
+      .where((cs: any) => cs.source.some({ name: sourceName }))
+      .include('source')
+      .first();
     if (existingOwn) return reply.status(400).send({ error: 'Source already exists in this category' });
 
     // Check inherited duplication
     if (category.inheritSources && category.parentId) {
       let currentParentId: string | null = category.parentId;
       while (currentParentId) {
-        const parent: any = await prisma.category.findUnique({ where: { id: currentParentId } });
+        const parent: any = await db.orm.public.Category.where({ id: currentParentId }).first();
         if (!parent) break;
-        const parentLink = await prisma.categorySource.findFirst({
-          where: { categoryId: currentParentId, source: { name: sourceName } },
-        });
+        const parentLink = await db.orm.public.CategorySource
+          .where({ categoryId: currentParentId })
+          .where((cs: any) => cs.source.some({ name: sourceName }))
+          .first();
         if (parentLink) {
           return reply.status(400).send({ error: 'Source already inherited from parent' });
         }
@@ -400,20 +395,19 @@ export async function addCategorySourceHandler(request: FastifyRequest, reply: F
     }
 
     // Ensure Source exists (case-sensitive unique by schema). Try find by name ignoring case relaxedly
-    let source = await prisma.source.findUnique({ where: { name: sourceName } });
+    let source = await db.orm.public.Source.where({ name: sourceName }).first();
     if (!source) {
-      source = await prisma.source.create({ data: { name: sourceName } });
+      source = await db.orm.public.Source.create({ name: sourceName });
     }
 
     // Determine next order
-    const maxOrder = await prisma.categorySource.aggregate({
-      where: { categoryId: id },
-      _max: { order: true },
-    });
-    const nextOrder = (maxOrder._max.order ?? -1) + 1;
+    const maxOrder: any = await db.orm.public.CategorySource
+      .where({ categoryId: id })
+      .aggregate((a: any) => ({ maxOrder: a.max('order') }));
+    const nextOrder = (maxOrder.maxOrder ?? -1) + 1;
 
-    await prisma.categorySource.create({
-      data: { categoryId: id, sourceId: source.id, isInherited: false, order: nextOrder },
+    await db.orm.public.CategorySource.create({
+      categoryId: id, sourceId: source.id, isInherited: false, order: nextOrder,
     });
 
     return reply.status(201).send({ success: true });
@@ -434,16 +428,17 @@ export async function deleteCategorySourceHandler(request: FastifyRequest, reply
   if (!id || !sourceId) return reply.status(400).send({ error: 'Category id and source id are required' });
 
   try {
-    const link = await prisma.categorySource.findUnique({
-      where: { categoryId_sourceId: { categoryId: id, sourceId } } as any,
-    });
+    const link = await db.orm.public.CategorySource
+      .where({ categoryId: id, sourceId })
+      .first();
 
     if (!link) return reply.status(404).send({ error: 'Source not found in this category' });
     if (link.isInherited) return reply.status(400).send({ error: 'Inherited sources cannot be removed here' });
 
-    await prisma.categorySource.delete({
-      where: { categoryId_sourceId: { categoryId: id, sourceId } } as any,
-    });
+    const deleted = await db.orm.public.CategorySource
+      .where({ categoryId: id, sourceId })
+      .delete();
+    if (!deleted) throw new Error('Source not found in this category');
     return reply.send({ success: true });
   } catch (error) {
     console.error('Error deleting category source:', error);
@@ -466,21 +461,25 @@ export async function reorderCategorySourcesHandler(request: FastifyRequest, rep
 
   try {
     // Validate that all ids correspond to own links
-    const ownLinks = await prisma.categorySource.findMany({ where: { categoryId: id, sourceId: { in: orderedSourceIds } } });
-    const ownIds = new Set(ownLinks.filter((l) => !l.isInherited).map((l) => l.sourceId));
+    const ownLinks = await db.orm.public.CategorySource
+      .where({ categoryId: id })
+      .where((m: any) => m.sourceId.in(orderedSourceIds))
+      .all();
+    const ownIds = new Set(ownLinks.filter((l: any) => !l.isInherited).map((l: any) => l.sourceId));
     const notOwn = orderedSourceIds.filter((sid: string) => !ownIds.has(sid));
     if (notOwn.length > 0) {
       return reply.status(400).send({ error: 'One or more sources are not own sources of this category' });
     }
 
-    await prisma.$transaction(
-      orderedSourceIds.map((sourceId: string, index: number) =>
-        prisma.categorySource.update({
-          where: { categoryId_sourceId: { categoryId: id, sourceId } } as any,
-          data: { order: index },
-        })
-      )
-    );
+    await db.transaction(async (tx) => {
+      for (let index = 0; index < orderedSourceIds.length; index++) {
+        const sourceId = orderedSourceIds[index];
+        const updated = await tx.orm.public.CategorySource
+          .where({ categoryId: id, sourceId })
+          .update({ order: index });
+        if (!updated) throw new Error(`Category source not found: ${sourceId}`);
+      }
+    });
 
     return reply.send({ success: true });
   } catch (error) {

@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
+import { or } from '@prisma/orm-postgres/orm-client';
 
 function isAdminOrOwner(user: any) {
   return user && (user.role === 'ADMIN' || user.role === 'OWNER' || user.role === 'FOUNDER');
@@ -13,23 +15,15 @@ export async function getAdminNotificationsHandler(request: FastifyRequest, repl
   const skip = (Number(page) - 1) * Number(limit);
 
   // Show notifications for this admin, or system/mod/report/ban/unban types
-  const where: any = {
-    OR: [
-      { adminId: user.id },
-      { type: { in: ['system', 'report', 'mod', 'ban', 'unban'] } }
-    ]
-  };
-  if (unread === 'true') where.read = false;
+  let query: any = db.orm.public.Notification.where((n: any) =>
+    or(n.adminId.eq(user.id), n.type.in(['system', 'report', 'mod', 'ban', 'unban']))
+  );
+  if (unread === 'true') query = query.where({ read: false });
 
   const [notifications, total] = await Promise.all([
-    prisma.notification.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: Number(limit)
-    }),
-    prisma.notification.count({ where })
+    query.orderBy((n: any) => n.createdAt.desc()).offset(skip).limit(Number(limit)).all(),
+    query.aggregate((a: any) => ({ n: a.count() }))
   ]);
 
-  return reply.send({ notifications, total, page: Number(page), limit: Number(limit) });
-} 
+  return reply.send(convertBigInts({ notifications, total: total.n, page: Number(page), limit: Number(limit) }));
+}

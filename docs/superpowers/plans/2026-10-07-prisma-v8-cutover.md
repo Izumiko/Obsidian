@@ -639,6 +639,11 @@ Each group below is one task. For every task:
 | `include: { rel: true }` | `.include("rel")` |
 | `select: { a: true }` | `.select("a")` |
 | `$transaction` | v8 transaction API (Task 6) |
+| `$transaction([op1, op2, ...])` (array form) | Callback form with sequential `await`s: `db.transaction(async (tx) => { await tx.orm.public.M.where(w).update(d); ... })`. A v7 `update`/`delete` that threw `P2025` now returns `null`, so throw inside the callback (`if (!row) throw new Error(...)`) to preserve the all-or-nothing rollback the array form provided. |
+| `orderBy: { boolField: 'desc' }` | **No v8 equivalent:** boolean columns carry no `order` trait, so the field accessor exposes no `.asc()/.desc()`. Resolve the ordered page with raw SQL (``db.raw.sql`SELECT "id" FROM "T" ORDER BY "bool" DESC, "t" DESC OFFSET ${skip} LIMIT ${take}`.returnsRow({ id: 'pg/text@1' }).build()`` + `db.runtime().query(plan)`), then load those rows through the ORM (`.where((m) => m.id.in(ids))`) and reorder to the id list. |
+| `where: { relation: { field: v } }` (to-one relation filter) | `.where((m) => m.relation.some({ field: v }))` (to-many: `.some`/`.every`/`.none`) |
+| `aggregate({ _max: { f: true } })` | `.aggregate((a) => ({ maxF: a.max("f") }))`; `min` likewise (the result key is the alias). `avg`/`sum` take the field name. |
+| nested `include: { rel: { include: { _count: … }, orderBy } }` | `.include("rel", (r) => r.orderBy((x) => x.field.asc()).include("sub", (s) => s.count()))` — a nested relation-count reducer surfaces as a scalar (`sub: number`) on the child row; fold it back into `_count` at the response boundary exactly as for a top-level relation count. |
 | `$executeRaw` / `$queryRaw` | `db.sql` / `db.raw` (Task 6) |
 | `where: { a, b }` | `.where({ a, b })` (shorthand equality) |
 | `where: { a: { not: x } }` | `.where((m) => m.a.neq(x))` |
@@ -656,6 +661,8 @@ Each group below is one task. For every task:
 | Insert/update of a `BigInt` column | v8's encoder rejects a JS `number` (`RUNTIME.ENCODE_FAILED`); pass a `bigint` (`BigInt(n)` / `0n`) |
 | `findUnique({ where: { a_b: { a, b } } })` | `.where({ a, b }).first()` |
 | `update({ data: { updatedAt: new Date() } })` | `updatedAt: toTimestamp(new Date().toISOString())`; likewise raw params that carried a `Date` now carry `toTimestamp(...)` |
+| writing a `Date` into a nullable timestamp filter (`{ gt: new Date() }`) | `{ gt: toTimestamp(new Date().toISOString()) }` — the codec rejects a JS `Date` on encode |
+| returning a row/array carrying `DateTime` columns | wrap the response in `convertBigInts(...)` (`src/lib/serialization.ts`); v7 `Date` serialized to ISO 8601, v8 decodes to PostgreSQL text so the helper restores the ISO output |
 
 Referenced relation (inferred contract uses `@@map` table names; model accessor stays the
 model name): `prisma.user` → `db.orm.public.User`.
