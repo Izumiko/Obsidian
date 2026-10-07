@@ -1,9 +1,10 @@
-import { prisma } from '../../src/lib/prisma.js';
+import { db } from '../../src/lib/prisma.js';
 
 export async function resetDb() {
-  await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE "User","Torrent","Category","Source","Config" RESTART IDENTITY CASCADE'
-  );
+  const plan = db.raw.sql`TRUNCATE TABLE "User","Torrent","Category","Source","Config" RESTART IDENTITY CASCADE`
+    .affectedCount()
+    .build();
+  await db.runtime().execute(plan);
 }
 
-export { prisma };
+export { db };

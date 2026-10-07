@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { db, prisma } from "../../src/lib/prisma.js";
+import { db } from "../../src/lib/prisma.js";
 
 // Task 6 spike: pins the Prisma 8 (`@prisma/orm-postgres` 8.0.0-rc.14) ORM
 // client syntax that the rest of the migration maps onto.
@@ -54,7 +54,7 @@ test("v8: transaction", async () => {
     /force-rollback/,
   );
   assert.equal(
-    await prisma.config.findUnique({ where: { id: rollbackId } }),
+    await db.orm.public.Config.where({ id: rollbackId }).first(),
     null,
     "rolled-back insert must not persist",
   );
@@ -65,11 +65,11 @@ test("v8: transaction", async () => {
       await tx.orm.public.Config.select("id").create({ id: commitId });
     });
     assert.ok(
-      await prisma.config.findUnique({ where: { id: commitId } }),
+      await db.orm.public.Config.where({ id: commitId }).first(),
       "committed insert must persist",
     );
   } finally {
-    await prisma.config.deleteMany({ where: { id: { in: [rollbackId, commitId] } } });
+    await db.orm.public.Config.where((c: any) => c.id.in([rollbackId, commitId])).deleteAll();
   }
 });
 
@@ -82,17 +82,15 @@ test("v8: raw sql", async () => {
 
 test("v8: enum + bigint round trip", async () => {
   const id = crypto.randomUUID();
-  await prisma.user.create({
-    data: {
-      id,
-      email: `v8-spike-${id}@example.com`,
-      username: `v8_spike_${id.replace(/-/g, "")}`,
-      passwordHash: "not-a-real-hash",
-      passkey: crypto.randomUUID(),
-      role: "ADMIN",
-      upload: 123_456_789_012_345n,
-      download: 987_654_321_098_765n,
-    },
+  await db.orm.public.User.create({
+    id,
+    email: `v8-spike-${id}@example.com`,
+    username: `v8_spike_${id.replace(/-/g, "")}`,
+    passwordHash: "not-a-real-hash",
+    passkey: crypto.randomUUID(),
+    role: "ADMIN",
+    upload: 123_456_789_012_345n,
+    download: 987_654_321_098_765n,
   });
 
   try {
@@ -107,6 +105,6 @@ test("v8: enum + bigint round trip", async () => {
     assert.equal(typeof row.download, "bigint");
     assert.equal(row.download, 987_654_321_098_765n);
   } finally {
-    await prisma.user.deleteMany({ where: { id } });
+    await db.orm.public.User.where({ id }).deleteAll();
   }
 });

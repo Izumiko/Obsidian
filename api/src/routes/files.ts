@@ -12,7 +12,7 @@ export async function registerFileRoutes(app: FastifyInstance) {
       if (!file) return reply.status(404).send({ error: 'File not found' });
 
       const config = await getConfig();
-      const buffer = await getFile({ file: file as any, config: config as any });
+      const buffer = await getFile({ file, config });
       reply.header('Content-Type', file.mimeType);
       return reply.send(buffer);
     } catch (_err) {

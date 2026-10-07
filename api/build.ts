@@ -42,7 +42,7 @@ async function build(): Promise<void> {
   });
 
     await esbuild.build({
-    entryPoints: [path.join(rootDir, "prisma/seed.ts")],
+    entryPoints: [path.join(rootDir, "src/seed.ts")],
     bundle: true,
     platform: "node",
     target: "node24",

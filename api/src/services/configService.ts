@@ -1,5 +1,7 @@
 import { db } from '../lib/prisma.js';
-import { Config } from '../generated/prisma/client.js';
+import type { models } from '../generated/prisma8/contract.js';
+
+type Config = typeof models.public.Config;
 
 export async function getConfig(): Promise<Config> {
   // Always fetch the config row with id=1
@@ -8,7 +10,7 @@ export async function getConfig(): Promise<Config> {
     // If not found, create with defaults
     config = await db.orm.public.Config.create({});
   }
-  return config as unknown as Config;
+  return config;
 }
 
 export async function updateConfig(data: Partial<Config>): Promise<Config> {
@@ -17,7 +19,7 @@ export async function updateConfig(data: Partial<Config>): Promise<Config> {
   if (!updated) {
     throw new Error('Config not found');
   }
-  return updated as unknown as Config;
+  return updated;
 }
 
 export async function isFirstUser(): Promise<boolean> {

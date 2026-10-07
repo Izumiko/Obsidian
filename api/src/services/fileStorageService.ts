@@ -1,7 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '../lib/prisma.js';
-import { UploadedFile, Config } from '../generated/prisma/client.js';
+import type { models } from '../generated/prisma8/contract.js';
 import { randomUUID } from 'crypto';
 import {
   S3Client,
@@ -18,14 +18,15 @@ function getSubfolder(type: FileType) {
   return type + 's'; // e.g., 'torrents', 'nfos', 'images'
 }
 
-// Note: S3 config fields (s3Bucket, s3Region, s3AccessKeyId, s3SecretAccessKey) must be present in the config object.
-// If using Prisma's Config type, you may need to extend it or use type assertion.
+// Note: S3 config fields (s3Bucket, s3Region, s3AccessKeyId, s3SecretAccessKey) are part of the v8 Config row.
+type Config = typeof models.public.Config;
+type UploadedFile = Omit<typeof models.public.UploadedFile, 'torrentPoster' | 'userAvatar'>;
 
 type S3Config = {
-  s3Bucket?: string;
-  s3Region?: string;
-  s3AccessKeyId?: string;
-  s3SecretAccessKey?: string;
+  s3Bucket?: string | null;
+  s3Region?: string | null;
+  s3AccessKeyId?: string | null;
+  s3SecretAccessKey?: string | null;
 };
 
 function getS3Client(config: Config & S3Config) {
@@ -68,7 +69,7 @@ export async function saveFile({
       size: buffer.length,
       mimeType,
       data: undefined
-    }) as unknown as UploadedFile;
+    });
   }
   if (config.storageType === 'S3') {
     if (!config?.s3Bucket) throw new Error('Missing S3 bucket in config');
@@ -89,7 +90,7 @@ export async function saveFile({
       size: buffer.length,
       mimeType,
       data: undefined
-    }) as unknown as UploadedFile;
+    });
   }
   if (config.storageType === 'DB') {
     const file = await db.orm.public.UploadedFile.create({
@@ -99,7 +100,7 @@ export async function saveFile({
       size: buffer.length,
       mimeType,
       data: new Uint8Array(buffer)
-    }) as unknown as UploadedFile;
+    });
     // Set storageKey to id for easy lookup
     await db.orm.public.UploadedFile.where({ id: file.id }).update({ storageKey: file.id });
     return { ...file, storageKey: file.id };

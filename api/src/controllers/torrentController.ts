@@ -421,7 +421,7 @@ export async function getTorrentHandler(request: FastifyRequest, reply: FastifyR
     const config = normalizeS3Config(await getConfig());
     const file = await db.orm.public.UploadedFile.where({ id: torrent.filePath }).first();
     if (file) {
-      const buf = await getFile({ file: file as any, config: config as any });
+      const buf = await getFile({ file, config });
       const parsed = await parseTorrent(buf);
       let filesList: { path: string; size: number }[] = [];
       const anyParsed: any = parsed as any;
@@ -518,7 +518,7 @@ export async function getNfoHandler(request: FastifyRequest, reply: FastifyReply
   const file = await db.orm.public.UploadedFile.where({ id: torrent.nfoPath }).first();
   if (!file) return reply.status(404).send({ error: 'NFO file not found' });
   try {
-    const nfoBuffer = await getFile({ file: file as any, config: config as any });
+    const nfoBuffer = await getFile({ file, config });
     
     // Sanitize filename for HTTP header (Windows-safe, allows dots)
     const sanitizedFilename = windowsSafeFilename(torrent.name || 'nfo');
@@ -892,7 +892,7 @@ export async function downloadTorrentWithTokenHandler(request: FastifyRequest, r
   if (!file) return reply.status(404).send({ error: 'Torrent file not found' });
   
   try {
-    const fileBuffer = await getFile({ file: file as any, config: config as any });
+    const fileBuffer = await getFile({ file, config });
     
     // Modify the torrent file to replace announce URLs with user's passkey
     const modifiedBuffer = await modifyTorrentAnnounceUrls(fileBuffer, downloadToken.user.passkey, request);
@@ -955,7 +955,7 @@ export async function generateMagnetWithTokenHandler(request: FastifyRequest, re
     const config = normalizeS3Config(await getConfig());
     const file = await db.orm.public.UploadedFile.where({ id: magnetToken.torrent.filePath }).first();
     if (file) {
-      const torrentBuffer = await getFile({ file: file as any, config: config as any });
+      const torrentBuffer = await getFile({ file, config });
       const parsed = await parseTorrent(torrentBuffer);
       
       // Add file length if available
@@ -994,7 +994,7 @@ export async function generateMagnetWithTokenHandler(request: FastifyRequest, re
     const config = normalizeS3Config(await getConfig());
     const file = await db.orm.public.UploadedFile.where({ id: magnetToken.torrent.filePath }).first();
     if (file) {
-      const torrentBuffer = await getFile({ file: file as any, config: config as any });
+      const torrentBuffer = await getFile({ file, config });
       const parsed = await parseTorrent(torrentBuffer);
       const parsedAny = parsed as any;
       

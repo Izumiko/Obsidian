@@ -2,7 +2,6 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { db } from '../lib/prisma.js';
 import { or } from '@prisma/orm-postgres/orm-client';
 import { toTimestamp, parseTimestamp } from '../lib/timestamps.js';
-import { UserRole } from '../generated/prisma/client.js';
 import { getConfig, isFirstUser } from '../services/configService.js';
 import jwt from 'jsonwebtoken';
 import { sendEmail, getFrontendBaseUrl } from '../utils/sendEmail.js';
@@ -78,7 +77,7 @@ export async function registerHandler(request: FastifyRequest, reply: FastifyRep
 
   // Assign OWNER role to first user, USER otherwise
   const first = await isFirstUser();
-  const role = first ? UserRole.OWNER : UserRole.USER;
+  const role: 'OWNER' | 'USER' = first ? 'OWNER' : 'USER';
 
   // Generate unique passkey
   const passkey = randomUUID().replace(/-/g, '');
@@ -411,7 +410,7 @@ export async function uploadAvatarHandler(request: FastifyRequest, reply: Fastif
           try {
             const oldFile = await db.orm.public.UploadedFile.where({ id: prev.avatarFileId }).first();
             if (oldFile) {
-              await deleteFile({ file: oldFile as any, config });
+              await deleteFile({ file: oldFile, config });
             }
           } catch {
             // Ignore deletion errors
@@ -436,7 +435,7 @@ export async function uploadAvatarHandler(request: FastifyRequest, reply: Fastif
       try {
         const oldFile = await db.orm.public.UploadedFile.where({ id: prev.avatarFileId }).first();
         if (oldFile) {
-          await deleteFile({ file: oldFile as any, config });
+          await deleteFile({ file: oldFile, config });
         }
               } catch {
           // Ignore deletion errors
@@ -461,7 +460,7 @@ export async function deleteAvatarHandler(request: FastifyRequest, reply: Fastif
     try {
       const file = await db.orm.public.UploadedFile.where({ id: existing.avatarFileId }).first();
       if (file) {
-        await deleteFile({ file: file as any, config });
+        await deleteFile({ file, config });
       }
     } catch {
       // Ignore deletion errors to avoid blocking user action

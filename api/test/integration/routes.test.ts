@@ -4,16 +4,15 @@ import crypto from "node:crypto";
 import { after, test } from "node:test";
 import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
-import { db, prisma } from "../../src/lib/prisma.js";
+import { db } from "../../src/lib/prisma.js";
 import { makeApp } from "../helpers/app.js";
 
 // Task 10 integration coverage for the `routes/` group (`files.ts`,
 // `torrent.ts`, `stats.ts`). The routes are exercised through the real Fastify
 // app via `app.inject()`, so the converted Prisma 8 call sites run against the
 // local PostgreSQL. Prerequisites are seeded with the Prisma 8 `db` client; the
-// `/stats` expectations are computed with the still-present Prisma 7 `prisma`
-// client, which makes the assertions an independent oracle rather than a copy
-// of the code under test.
+// `/stats` expectations are computed with an independent raw aggregation over
+// the same client.
 //
 // `process.env.TZ` is pinned to UTC above, matching the server, so the
 // timestamp columns decode deterministically.
@@ -234,7 +233,7 @@ test("GET /files/:id returns 404 for an unknown file", async () => {
 // stats.ts — GET /stats aggregates through `db`
 // ---------------------------------------------------------------------------
 
-test("GET /stats matches the Prisma 7 count/sum oracle", async () => {
+test("GET /stats matches the count/sum oracle", async () => {
   const app = await makeApp();
   try {
     const user = await makeUser();
@@ -246,14 +245,20 @@ test("GET /stats matches the Prisma 7 count/sum oracle", async () => {
       event: "completed",
     });
 
-    const expectedUsers = await prisma.user.count();
-    const expectedTorrents = await prisma.torrent.count();
-    const expectedCompleted = await prisma.announce.count({
-      where: { event: "completed" },
-    });
-    const expectedUploaded = await prisma.announce.aggregate({
-      _sum: { uploaded: true },
-    });
+    const expectedUsers = (
+      await db.orm.public.User.aggregate((a: any) => ({ n: a.count() }))
+    ).n;
+    const expectedTorrents = (
+      await db.orm.public.Torrent.aggregate((a: any) => ({ n: a.count() }))
+    ).n;
+    const expectedCompleted = (
+      await db.orm.public.Announce.where({ event: "completed" }).aggregate(
+        (a: any) => ({ n: a.count() }),
+      )
+    ).n;
+    const expectedUploaded = await db.orm.public.Announce.aggregate(
+      (a: any) => ({ total: a.sum("uploaded") }),
+    );
 
     const res = await app.inject({ method: "GET", url: "/stats" });
 
@@ -264,7 +269,7 @@ test("GET /stats matches the Prisma 7 count/sum oracle", async () => {
     assert.equal(body.totalDownloads, expectedCompleted);
     assert.equal(
       body.totalUploadBytes,
-      Number(expectedUploaded._sum.uploaded || 0),
+      Number(expectedUploaded.total || 0),
     );
     assert.match(
       body.totalUploadFormatted,
