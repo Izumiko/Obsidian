@@ -624,14 +624,14 @@ Each group below is one task. For every task:
 
 | Prisma 7 | Prisma 8 |
 | --- | --- |
-| `findUnique` / `findFirst` | `.where(...).first()` |
+| `findUnique` / `findFirst` | `.where(...).first()`; a filter-less `findFirst()` is `Model.first()` |
 | `findUniqueOrThrow` / `findFirstOrThrow` | `.where(...).all().firstOrThrow()` |
 | `findMany` | `.where(...).all()` |
 | `create({ data: x })` | `create(x)` |
-| `update({ where: w, data: d })` | `.where(w).update(d)` |
-| `delete({ where: w })` | `.where(w).delete()` |
+| `update({ where: w, data: d })` | `.where(w).update(d)` — returns `Row \| null` instead of throwing `P2025`; add a null check to preserve throw-on-missing |
+| `delete({ where: w })` | `.where(w).delete()` — returns `Row \| null` instead of throwing `P2025` |
 | `upsert({ where: w, create, update })` | `.where(w).upsert(...)` |
-| `updateMany` / `deleteMany` | `.where(...).updateAndCount(d)` / `.where(...).deleteAndCount()` |
+| `updateMany` / `deleteMany` | `.where(...).updateAndCount(d)` / `.where(...).deleteAndCount()` — these return a bare `number`, not `{ count }`; return `{ count }` at the public boundary to preserve the v7 `BatchPayload` shape. A filter-less `updateMany` needs `.where({})` |
 | `count()` | `.aggregate((a) => ({ n: a.count() }))` |
 | `include: { rel: true }` | `.include("rel")` |
 | `select: { a: true }` | `.select("a")` |
@@ -649,6 +649,12 @@ Each group below is one task. For every task:
 
 Referenced relation (inferred contract uses `@@map` table names; model accessor stays the
 model name): `prisma.user` → `db.orm.public.User`.
+
+Test isolation: `node --test` runs test **files** concurrently by default (one child process
+per file), and every integration file shares the same local database. Because `Config` is a
+global `id=1` singleton and `getConfig()` inserts it on first read, two files calling it at
+once race on `Config_pkey`. `package.json` runs `test` with `--test-concurrency=1` so files
+execute serially; keep that flag as more DB-backed groups are added.
 
 ### Task 8: Rewrite `announce_features/` group
 

@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { getConfig } from './configService.js';
-import { prisma } from '../lib/prisma.js';
+import { db } from '../lib/prisma.js';
 
 // Create a notification and optionally send an email
 export async function createNotification({ userId, type, message, adminId, relatedBanId, sendEmail = false, email, emailSubject, emailText, emailHtml }: {
@@ -17,14 +17,12 @@ export async function createNotification({ userId, type, message, adminId, relat
 }) {
   try {
     console.log('[createNotification] Creating notification:', { userId, type, message, adminId, relatedBanId, sendEmail, email });
-  const notification = await prisma.notification.create({
-    data: {
-      userId,
-      type,
-      message,
-      adminId,
-      relatedBanId
-    }
+  const notification = await db.orm.public.Notification.create({
+    userId,
+    type,
+    message,
+    adminId,
+    relatedBanId
   });
     console.log('[createNotification] Notification created:', notification);
   if (sendEmail && email) {
@@ -62,24 +60,30 @@ export async function sendEmailNotification({ to, subject, text, html }: { to: s
 
 // Fetch notifications for a user
 export async function getUserNotifications(userId: string, unreadOnly = false) {
-  return prisma.notification.findMany({
-    where: { userId, ...(unreadOnly ? { read: false } : {}) },
-    orderBy: { createdAt: 'desc' }
-  });
+  if (unreadOnly) {
+    return db.orm.public.Notification
+      .where({ userId, read: false })
+      .orderBy((n) => n.createdAt.desc())
+      .all();
+  }
+  return db.orm.public.Notification
+    .where({ userId })
+    .orderBy((n) => n.createdAt.desc())
+    .all();
 }
 
 // Mark a notification as read
 export async function markNotificationRead(notificationId: string, userId: string) {
-  return prisma.notification.updateMany({
-    where: { id: notificationId, userId },
-    data: { read: true }
-  });
+  const count = await db.orm.public.Notification
+    .where({ id: notificationId, userId })
+    .updateAndCount({ read: true });
+  return { count };
 }
 
 // Mark all notifications as read for a user
 export async function markAllNotificationsRead(userId: string) {
-  return prisma.notification.updateMany({
-    where: { userId, read: false },
-    data: { read: true }
-  });
+  const count = await db.orm.public.Notification
+    .where({ userId, read: false })
+    .updateAndCount({ read: true });
+  return { count };
 } 
