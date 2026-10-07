@@ -190,6 +190,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import staticPlugin from '@fastify/static';
+import { fileURLToPath } from 'node:url';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerTorrentRoutes } from './routes/torrent.js';
 import { registerUserRoutes } from './routes/user.js';
@@ -202,8 +203,16 @@ import { registerFileRoutes } from './routes/files.js';
 import { checkHitAndRunGracePeriod } from './announce_features/hitAndRun.js';
 import path from 'path';
 
-export async function buildApp() {
-  const app = Fastify({ logger: false });
+export async function buildApp(options: { logger?: boolean | Record<string, unknown> } = {}) {
+  const app = Fastify({ logger: options.logger ?? { level: 'info' } });
+
+  app.addHook('onRequest', async (request) => {
+    console.log(`[GLOBAL] ${request.method} ${request.url}`, {
+      headers: request.headers,
+      params: request.params,
+      query: request.query,
+    });
+  });
 
   const defaultCorsOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
   const envOrigins = process.env.CORS_ORIGIN?.split(',').map(s => s.trim()).filter(Boolean) || [];
@@ -246,7 +255,9 @@ const start = async () => {
   }
 };
 
-start();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  start();
+}
 ```
 
 - [ ] **Step 2: Create the app helper**
@@ -257,7 +268,7 @@ start();
 import { buildApp } from '../../src/index.js';
 
 export async function makeApp() {
-  const app = await buildApp();
+  const app = await buildApp({ logger: false });
   await app.ready();
   return app;
 }
