@@ -142,7 +142,7 @@
               "lastAnnounceAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -278,7 +278,7 @@
               "cooldownUntil": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -295,7 +295,7 @@
               "lastCheckedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -372,7 +372,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -410,7 +410,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -479,7 +479,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -624,21 +624,6 @@
               }
             },
             "relations": {
-              "categories": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "parentId"
-                  ]
-                },
-                "to": {
-                  "model": "Category",
-                  "namespace": "public"
-                }
-              },
               "categorySources": {
                 "cardinality": "1:N",
                 "on": {
@@ -651,6 +636,21 @@
                 },
                 "to": {
                   "model": "CategorySource",
+                  "namespace": "public"
+                }
+              },
+              "children": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "parentId"
+                  ]
+                },
+                "to": {
+                  "model": "Category",
                   "namespace": "public"
                 }
               },
@@ -741,7 +741,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -779,7 +779,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -861,7 +861,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -906,7 +906,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -922,36 +922,6 @@
               }
             },
             "relations": {
-              "commentVotes": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "commentId"
-                  ]
-                },
-                "to": {
-                  "model": "CommentVote",
-                  "namespace": "public"
-                }
-              },
-              "comments": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "parentId"
-                  ]
-                },
-                "to": {
-                  "model": "Comment",
-                  "namespace": "public"
-                }
-              },
               "parent": {
                 "cardinality": "N:1",
                 "nullable": true,
@@ -961,6 +931,21 @@
                   ],
                   "targetFields": [
                     "id"
+                  ]
+                },
+                "to": {
+                  "model": "Comment",
+                  "namespace": "public"
+                }
+              },
+              "replies": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "parentId"
                   ]
                 },
                 "to": {
@@ -1015,6 +1000,21 @@
                   "model": "User",
                   "namespace": "public"
                 }
+              },
+              "votes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "commentId"
+                  ]
+                },
+                "to": {
+                  "model": "CommentVote",
+                  "namespace": "public"
+                }
               }
             },
             "storage": {
@@ -1063,7 +1063,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1523,7 +1523,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1533,7 +1533,7 @@
               "expiresAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1643,7 +1643,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1653,7 +1653,7 @@
               "expiresAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1737,7 +1737,7 @@
               "downloadedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1761,7 +1761,7 @@
               "lastSeededAt": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1864,7 +1864,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1881,7 +1881,7 @@
               "expiresAt": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1898,7 +1898,7 @@
               "usedAt": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -1977,13 +1977,6 @@
           },
           "Notification": {
             "fields": {
-              "_type": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "adminId": {
                 "nullable": true,
                 "type": {
@@ -1994,7 +1987,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2024,6 +2017,13 @@
               },
               "relatedBanId": {
                 "nullable": true,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
+              "type": {
+                "nullable": false,
                 "type": {
                   "codecId": "pg/text@1",
                   "kind": "scalar"
@@ -2089,9 +2089,6 @@
             },
             "storage": {
               "fields": {
-                "_type": {
-                  "column": "type"
-                },
                 "adminId": {
                   "column": "adminId"
                 },
@@ -2110,6 +2107,9 @@
                 "relatedBanId": {
                   "column": "relatedBanId"
                 },
+                "type": {
+                  "column": "type"
+                },
                 "userId": {
                   "column": "userId"
                 }
@@ -2123,7 +2123,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2133,7 +2133,7 @@
               "expiresAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2224,7 +2224,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2234,7 +2234,7 @@
               "expiresAt": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2363,7 +2363,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2422,7 +2422,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2480,7 +2480,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2535,7 +2535,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2673,7 +2673,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2704,7 +2704,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2763,7 +2763,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2857,7 +2857,7 @@
               "rejectedAt": {
                 "nullable": true,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -2896,7 +2896,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -3050,21 +3050,6 @@
                   "namespace": "public"
                 }
               },
-              "torrentVotes": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "torrentId"
-                  ]
-                },
-                "to": {
-                  "model": "TorrentVote",
-                  "namespace": "public"
-                }
-              },
               "uploader": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -3078,6 +3063,21 @@
                 },
                 "to": {
                   "model": "User",
+                  "namespace": "public"
+                }
+              },
+              "votes": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "torrentId"
+                  ]
+                },
+                "to": {
+                  "model": "TorrentVote",
                   "namespace": "public"
                 }
               }
@@ -3157,7 +3157,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -3251,17 +3251,10 @@
           },
           "UploadedFile": {
             "fields": {
-              "_type": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -3310,10 +3303,17 @@
                   "kind": "scalar"
                 }
               },
+              "type": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -3322,7 +3322,7 @@
               }
             },
             "relations": {
-              "torrent": {
+              "torrentPoster": {
                 "cardinality": "1:1",
                 "nullable": true,
                 "on": {
@@ -3338,7 +3338,7 @@
                   "namespace": "public"
                 }
               },
-              "user": {
+              "userAvatar": {
                 "cardinality": "1:1",
                 "nullable": true,
                 "on": {
@@ -3357,9 +3357,6 @@
             },
             "storage": {
               "fields": {
-                "_type": {
-                  "column": "type"
-                },
                 "createdAt": {
                   "column": "createdAt"
                 },
@@ -3380,6 +3377,9 @@
                 },
                 "storageKey": {
                   "column": "storageKey"
+                },
+                "type": {
+                  "column": "type"
                 },
                 "updatedAt": {
                   "column": "updatedAt"
@@ -3422,7 +3422,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -3529,7 +3529,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -3552,6 +3552,36 @@
               }
             },
             "relations": {
+              "activities": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "userId"
+                  ]
+                },
+                "to": {
+                  "model": "UserActivity",
+                  "namespace": "public"
+                }
+              },
+              "adminNotifications": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "adminId"
+                  ]
+                },
+                "to": {
+                  "model": "Notification",
+                  "namespace": "public"
+                }
+              },
               "announceRateLimits": {
                 "cardinality": "1:N",
                 "on": {
@@ -3610,6 +3640,21 @@
                 },
                 "to": {
                   "model": "UploadedFile",
+                  "namespace": "public"
+                }
+              },
+              "bannedUsers": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "bannedById"
+                  ]
+                },
+                "to": {
+                  "model": "PeerBan",
                   "namespace": "public"
                 }
               },
@@ -3703,7 +3748,7 @@
                   "namespace": "public"
                 }
               },
-              "invites": {
+              "invitesCreated": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
@@ -3718,7 +3763,7 @@
                   "namespace": "public"
                 }
               },
-              "invitesInvite": {
+              "invitesUsed": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
@@ -3734,21 +3779,6 @@
                 }
               },
               "notifications": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "adminId"
-                  ]
-                },
-                "to": {
-                  "model": "Notification",
-                  "namespace": "public"
-                }
-              },
-              "notificationsNotification": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
@@ -3778,37 +3808,22 @@
                   "namespace": "public"
                 }
               },
-              "peerBans": {
+              "rejectedTorrents": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
                     "id"
                   ],
                   "targetFields": [
-                    "bannedById"
+                    "rejectedById"
                   ]
                 },
                 "to": {
-                  "model": "PeerBan",
+                  "model": "Torrent",
                   "namespace": "public"
                 }
               },
-              "requests": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "filledById"
-                  ]
-                },
-                "to": {
-                  "model": "Request",
-                  "namespace": "public"
-                }
-              },
-              "requestsRequest": {
+              "requestsCreated": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
@@ -3816,6 +3831,21 @@
                   ],
                   "targetFields": [
                     "userId"
+                  ]
+                },
+                "to": {
+                  "model": "Request",
+                  "namespace": "public"
+                }
+              },
+              "requestsFilled": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "filledById"
                   ]
                 },
                 "to": {
@@ -3845,21 +3875,6 @@
                     "id"
                   ],
                   "targetFields": [
-                    "rejectedById"
-                  ]
-                },
-                "to": {
-                  "model": "Torrent",
-                  "namespace": "public"
-                }
-              },
-              "torrentsTorrent": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
                     "uploaderId"
                   ]
                 },
@@ -3868,22 +3883,7 @@
                   "namespace": "public"
                 }
               },
-              "userActivities": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "userId"
-                  ]
-                },
-                "to": {
-                  "model": "UserActivity",
-                  "namespace": "public"
-                }
-              },
-              "wikiPages": {
+              "wikiPagesCreated": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
@@ -3898,7 +3898,7 @@
                   "namespace": "public"
                 }
               },
-              "wikiPagesWikiPage": {
+              "wikiPagesUpdated": {
                 "cardinality": "1:N",
                 "on": {
                   "localFields": [
@@ -3986,17 +3986,10 @@
           },
           "UserActivity": {
             "fields": {
-              "_type": {
-                "nullable": false,
-                "type": {
-                  "codecId": "pg/text@1",
-                  "kind": "scalar"
-                }
-              },
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -4045,6 +4038,13 @@
                   "kind": "scalar"
                 }
               },
+              "type": {
+                "nullable": false,
+                "type": {
+                  "codecId": "pg/text@1",
+                  "kind": "scalar"
+                }
+              },
               "userId": {
                 "nullable": false,
                 "type": {
@@ -4073,9 +4073,6 @@
             },
             "storage": {
               "fields": {
-                "_type": {
-                  "column": "type"
-                },
                 "createdAt": {
                   "column": "createdAt"
                 },
@@ -4097,6 +4094,9 @@
                 "title": {
                   "column": "title"
                 },
+                "type": {
+                  "column": "type"
+                },
                 "userId": {
                   "column": "userId"
                 }
@@ -4117,7 +4117,7 @@
               "createdAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -4169,7 +4169,7 @@
               "updatedAt": {
                 "nullable": false,
                 "type": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "kind": "scalar",
                   "typeParams": {
                     "precision": 3
@@ -4192,6 +4192,21 @@
               }
             },
             "relations": {
+              "children": {
+                "cardinality": "1:N",
+                "on": {
+                  "localFields": [
+                    "id"
+                  ],
+                  "targetFields": [
+                    "parentId"
+                  ]
+                },
+                "to": {
+                  "model": "WikiPage",
+                  "namespace": "public"
+                }
+              },
               "createdBy": {
                 "cardinality": "N:1",
                 "nullable": false,
@@ -4237,21 +4252,6 @@
                 },
                 "to": {
                   "model": "User",
-                  "namespace": "public"
-                }
-              },
-              "wikiPages": {
-                "cardinality": "1:N",
-                "on": {
-                  "localFields": [
-                    "id"
-                  ],
-                  "targetFields": [
-                    "parentId"
-                  ]
-                },
-                "to": {
-                  "model": "WikiPage",
                   "namespace": "public"
                 }
               }
@@ -4382,7 +4382,7 @@
                   "nullable": false
                 },
                 "lastAnnounceAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -4434,7 +4434,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Announce_torrentId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -4453,7 +4452,6 @@
                   }
                 },
                 {
-                  "name": "Announce_userId_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -4485,8 +4483,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Announce_pkey"
+                ]
               },
               "uniques": []
             },
@@ -4502,7 +4499,7 @@
                   "nullable": false
                 },
                 "cooldownUntil": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": true,
                   "typeParams": {
@@ -4515,7 +4512,7 @@
                   "nullable": false
                 },
                 "lastCheckedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -4539,7 +4536,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "AnnounceRateLimit_userId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -4570,8 +4566,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "AnnounceRateLimit_pkey"
+                ]
               },
               "uniques": []
             },
@@ -4583,7 +4578,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -4619,7 +4614,7 @@
                   "nullable": false
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -4638,7 +4633,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Announcement_createdById_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -4676,15 +4670,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Announcement_pkey"
+                ]
               },
               "uniques": []
             },
             "Bookmark": {
               "columns": {
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -4718,26 +4711,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Bookmark_torrentId_fkey",
-                  "onDelete": "restrict",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "torrentId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Bookmark"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Torrent"
-                  }
-                },
-                {
-                  "name": "Bookmark_userId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -4754,6 +4727,24 @@
                     "namespaceId": "public",
                     "tableName": "User"
                   }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "torrentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Bookmark"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Torrent"
+                  }
                 }
               ],
               "indexes": [
@@ -4769,8 +4760,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Bookmark_pkey"
+                ]
               },
               "uniques": []
             },
@@ -4818,7 +4808,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Category_parentId_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -4849,8 +4838,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Category_pkey"
+                ]
               },
               "uniques": []
             },
@@ -4862,7 +4850,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -4902,7 +4890,7 @@
                   "nullable": false
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -4912,7 +4900,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "CategorySource_categoryId_fkey",
                   "onDelete": "cascade",
                   "onUpdate": "cascade",
                   "source": {
@@ -4931,7 +4918,6 @@
                   }
                 },
                 {
-                  "name": "CategorySource_sourceId_fkey",
                   "onDelete": "cascade",
                   "onUpdate": "cascade",
                   "source": {
@@ -4985,8 +4971,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "CategorySource_pkey"
+                ]
               },
               "uniques": []
             },
@@ -4998,7 +4983,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -5039,7 +5024,7 @@
                   "nullable": true
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -5054,7 +5039,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Comment_parentId_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -5073,26 +5057,6 @@
                   }
                 },
                 {
-                  "name": "Comment_requestId_fkey",
-                  "onDelete": "setNull",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "requestId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Comment"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Request"
-                  }
-                },
-                {
-                  "name": "Comment_torrentId_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -5111,7 +5075,24 @@
                   }
                 },
                 {
-                  "name": "Comment_userId_fkey",
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "requestId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Comment"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Request"
+                  }
+                },
+                {
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -5134,8 +5115,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Comment_pkey"
+                ]
               },
               "uniques": []
             },
@@ -5147,7 +5127,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -5176,26 +5156,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "CommentVote_commentId_fkey",
-                  "onDelete": "restrict",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "commentId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "CommentVote"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Comment"
-                  }
-                },
-                {
-                  "name": "CommentVote_userId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -5212,6 +5172,24 @@
                     "namespaceId": "public",
                     "tableName": "User"
                   }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "commentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "CommentVote"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Comment"
+                  }
                 }
               ],
               "indexes": [
@@ -5227,8 +5205,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "CommentVote_pkey"
+                ]
               },
               "uniques": []
             },
@@ -5545,15 +5522,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Config_pkey"
+                ]
               },
               "uniques": []
             },
             "DownloadToken": {
               "columns": {
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -5565,7 +5541,7 @@
                   }
                 },
                 "expiresAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -5604,26 +5580,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "DownloadToken_torrentId_fkey",
-                  "onDelete": "cascade",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "torrentId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "DownloadToken"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Torrent"
-                  }
-                },
-                {
-                  "name": "DownloadToken_userId_fkey",
                   "onDelete": "cascade",
                   "onUpdate": "cascade",
                   "source": {
@@ -5639,6 +5595,24 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "User"
+                  }
+                },
+                {
+                  "onDelete": "cascade",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "torrentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "DownloadToken"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Torrent"
                   }
                 }
               ],
@@ -5668,15 +5642,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "DownloadToken_pkey"
+                ]
               },
               "uniques": []
             },
             "EmailVerificationToken": {
               "columns": {
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -5688,7 +5661,7 @@
                   }
                 },
                 "expiresAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -5722,7 +5695,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "EmailVerificationToken_userId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -5767,15 +5739,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "EmailVerificationToken_pkey"
+                ]
               },
               "uniques": []
             },
             "HitAndRun": {
               "columns": {
                 "downloadedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -5801,7 +5772,7 @@
                   "nullable": false
                 },
                 "lastSeededAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": true,
                   "typeParams": {
@@ -5830,26 +5801,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "HitAndRun_torrentId_fkey",
-                  "onDelete": "restrict",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "torrentId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "HitAndRun"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Torrent"
-                  }
-                },
-                {
-                  "name": "HitAndRun_userId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -5866,14 +5817,31 @@
                     "namespaceId": "public",
                     "tableName": "User"
                   }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "torrentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "HitAndRun"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Torrent"
+                  }
                 }
               ],
               "indexes": [],
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "HitAndRun_pkey"
+                ]
               },
               "uniques": []
             },
@@ -5885,7 +5853,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -5902,7 +5870,7 @@
                   "nullable": false
                 },
                 "expiresAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": true,
                   "typeParams": {
@@ -5915,7 +5883,7 @@
                   "nullable": false
                 },
                 "usedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": true,
                   "typeParams": {
@@ -5930,7 +5898,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Invite_createdById_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -5949,7 +5916,6 @@
                   }
                 },
                 {
-                  "name": "Invite_usedById_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -5980,8 +5946,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Invite_pkey"
+                ]
               },
               "uniques": []
             },
@@ -5993,7 +5958,7 @@
                   "nullable": true
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -6041,12 +6006,11 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Notification_adminId_fkey",
-                  "onDelete": "setNull",
+                  "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
-                      "adminId"
+                      "userId"
                     ],
                     "namespaceId": "public",
                     "tableName": "Notification"
@@ -6060,7 +6024,6 @@
                   }
                 },
                 {
-                  "name": "Notification_relatedBanId_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -6079,12 +6042,11 @@
                   }
                 },
                 {
-                  "name": "Notification_userId_fkey",
-                  "onDelete": "restrict",
+                  "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
-                      "userId"
+                      "adminId"
                     ],
                     "namespaceId": "public",
                     "tableName": "Notification"
@@ -6117,15 +6079,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Notification_pkey"
+                ]
               },
               "uniques": []
             },
             "PasswordResetToken": {
               "columns": {
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -6137,7 +6098,7 @@
                   }
                 },
                 "expiresAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -6171,7 +6132,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "PasswordResetToken_userId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -6216,8 +6176,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "PasswordResetToken_pkey"
+                ]
               },
               "uniques": []
             },
@@ -6229,7 +6188,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -6241,7 +6200,7 @@
                   }
                 },
                 "expiresAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": true,
                   "typeParams": {
@@ -6281,7 +6240,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "PeerBan_bannedById_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -6340,8 +6298,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "PeerBan_pkey"
+                ]
               },
               "uniques": []
             },
@@ -6353,7 +6310,7 @@
                   "nullable": true
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -6412,7 +6369,7 @@
                   "nullable": false
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -6440,8 +6397,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Rank_pkey"
+                ]
               },
               "uniques": []
             },
@@ -6453,7 +6409,7 @@
                   "nullable": true
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -6508,7 +6464,7 @@
                   "nullable": false
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -6523,12 +6479,11 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Request_categoryId_fkey",
-                  "onDelete": "setNull",
+                  "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
-                      "categoryId"
+                      "userId"
                     ],
                     "namespaceId": "public",
                     "tableName": "Request"
@@ -6538,11 +6493,10 @@
                       "id"
                     ],
                     "namespaceId": "public",
-                    "tableName": "Category"
+                    "tableName": "User"
                   }
                 },
                 {
-                  "name": "Request_filledById_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -6561,7 +6515,6 @@
                   }
                 },
                 {
-                  "name": "Request_filledTorrentId_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -6580,12 +6533,11 @@
                   }
                 },
                 {
-                  "name": "Request_userId_fkey",
-                  "onDelete": "restrict",
+                  "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
-                      "userId"
+                      "categoryId"
                     ],
                     "namespaceId": "public",
                     "tableName": "Request"
@@ -6595,7 +6547,7 @@
                       "id"
                     ],
                     "namespaceId": "public",
-                    "tableName": "User"
+                    "tableName": "Category"
                   }
                 }
               ],
@@ -6603,15 +6555,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Request_pkey"
+                ]
               },
               "uniques": []
             },
             "Source": {
               "columns": {
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -6642,7 +6593,7 @@
                   "nullable": false
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -6663,8 +6614,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Source_pkey"
+                ]
               },
               "uniques": []
             },
@@ -6676,7 +6626,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -6764,7 +6714,7 @@
                   "nullable": true
                 },
                 "rejectedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": true,
                   "typeParams": {
@@ -6800,7 +6750,7 @@
                   "nullable": true
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -6815,12 +6765,11 @@
               },
               "foreignKeys": [
                 {
-                  "name": "Torrent_categoryId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
-                      "categoryId"
+                      "uploaderId"
                     ],
                     "namespaceId": "public",
                     "tableName": "Torrent"
@@ -6830,30 +6779,10 @@
                       "id"
                     ],
                     "namespaceId": "public",
-                    "tableName": "Category"
+                    "tableName": "User"
                   }
                 },
                 {
-                  "name": "Torrent_posterFileId_fkey",
-                  "onDelete": "setNull",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "posterFileId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Torrent"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "UploadedFile"
-                  }
-                },
-                {
-                  "name": "Torrent_rejectedById_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -6872,12 +6801,11 @@
                   }
                 },
                 {
-                  "name": "Torrent_uploaderId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
                     "columns": [
-                      "uploaderId"
+                      "categoryId"
                     ],
                     "namespaceId": "public",
                     "tableName": "Torrent"
@@ -6887,7 +6815,25 @@
                       "id"
                     ],
                     "namespaceId": "public",
-                    "tableName": "User"
+                    "tableName": "Category"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "posterFileId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Torrent"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "UploadedFile"
                   }
                 }
               ],
@@ -6910,15 +6856,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "Torrent_pkey"
+                ]
               },
               "uniques": []
             },
             "TorrentVote": {
               "columns": {
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -6952,26 +6897,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "TorrentVote_torrentId_fkey",
-                  "onDelete": "restrict",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "torrentId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "TorrentVote"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "Torrent"
-                  }
-                },
-                {
-                  "name": "TorrentVote_userId_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -6988,6 +6913,24 @@
                     "namespaceId": "public",
                     "tableName": "User"
                   }
+                },
+                {
+                  "onDelete": "restrict",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "torrentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "TorrentVote"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "Torrent"
+                  }
                 }
               ],
               "indexes": [
@@ -7003,15 +6946,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "TorrentVote_pkey"
+                ]
               },
               "uniques": []
             },
             "UploadedFile": {
               "columns": {
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -7058,7 +7000,7 @@
                   "nullable": false
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -7071,8 +7013,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "UploadedFile_pkey"
+                ]
               },
               "uniques": []
             },
@@ -7107,7 +7048,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -7226,7 +7167,7 @@
                   }
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -7250,7 +7191,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "User_avatarFileId_fkey",
                   "onDelete": "setNull",
                   "onUpdate": "cascade",
                   "source": {
@@ -7316,15 +7256,14 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "User_pkey"
+                ]
               },
               "uniques": []
             },
             "UserActivity": {
               "columns": {
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -7378,7 +7317,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "UserActivity_userId_fkey",
                   "onDelete": "cascade",
                   "onUpdate": "cascade",
                   "source": {
@@ -7424,8 +7362,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "UserActivity_pkey"
+                ]
               },
               "uniques": []
             },
@@ -7437,7 +7374,7 @@
                   "nullable": false
                 },
                 "createdAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "default": {
                     "expression": "now()",
                     "kind": "function"
@@ -7483,7 +7420,7 @@
                   "nullable": false
                 },
                 "updatedAt": {
-                  "codecId": "pg/timestamp-temporal@1",
+                  "codecId": "pg/timestamp-string@1",
                   "nativeType": "timestamp",
                   "nullable": false,
                   "typeParams": {
@@ -7507,7 +7444,6 @@
               },
               "foreignKeys": [
                 {
-                  "name": "WikiPage_createdById_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -7526,26 +7462,6 @@
                   }
                 },
                 {
-                  "name": "WikiPage_parentId_fkey",
-                  "onDelete": "setNull",
-                  "onUpdate": "cascade",
-                  "source": {
-                    "columns": [
-                      "parentId"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "WikiPage"
-                  },
-                  "target": {
-                    "columns": [
-                      "id"
-                    ],
-                    "namespaceId": "public",
-                    "tableName": "WikiPage"
-                  }
-                },
-                {
-                  "name": "WikiPage_updatedById_fkey",
                   "onDelete": "restrict",
                   "onUpdate": "cascade",
                   "source": {
@@ -7561,6 +7477,24 @@
                     ],
                     "namespaceId": "public",
                     "tableName": "User"
+                  }
+                },
+                {
+                  "onDelete": "setNull",
+                  "onUpdate": "cascade",
+                  "source": {
+                    "columns": [
+                      "parentId"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "WikiPage"
+                  },
+                  "target": {
+                    "columns": [
+                      "id"
+                    ],
+                    "namespaceId": "public",
+                    "tableName": "WikiPage"
                   }
                 }
               ],
@@ -7597,8 +7531,7 @@
               "primaryKey": {
                 "columns": [
                   "id"
-                ],
-                "name": "WikiPage_pkey"
+                ]
               },
               "uniques": []
             }
@@ -7653,7 +7586,428 @@
         "kind": "postgres-schema"
       }
     },
-    "storageHash": "75348a708ad1183bac53861af3c45f6ce2390c06de5ae15cee250b8e6b2bc355"
+    "storageHash": "08238cb95b5c7a98e7e81d94db2a4c29d159275b046c7a77594f1408b48096ef"
+  },
+  "execution": {
+    "executionHash": "0a9f5adea660ee974afa75b608b6c00cf3fffe41e67dd6b6006c63a09a5d30d7",
+    "mutations": {
+      "defaults": [
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Announce",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "AnnounceRateLimit",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Announcement",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Announcement",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Bookmark",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Category",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "CategorySource",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "CategorySource",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Comment",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Comment",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "CommentVote",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "DownloadToken",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "EmailVerificationToken",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "HitAndRun",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Invite",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Notification",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "PasswordResetToken",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "PeerBan",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Rank",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Rank",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Request",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Request",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Source",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Source",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Torrent",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "Torrent",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "cuid2",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "TorrentVote",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "UploadedFile",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "UploadedFile",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "User",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "User",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "UserActivity",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "uuidv4",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "WikiPage",
+            "field": "id",
+            "namespace": "public"
+          }
+        },
+        {
+          "onCreate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "onUpdate": {
+            "id": "timestampNow",
+            "kind": "generator"
+          },
+          "ref": {
+            "entry": "WikiPage",
+            "field": "updatedAt",
+            "namespace": "public"
+          }
+        }
+      ]
+    }
   },
   "capabilities": {
     "postgres": {
