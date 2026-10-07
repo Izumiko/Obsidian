@@ -632,7 +632,8 @@ Each group below is one task. For every task:
 | `delete({ where: w })` | `.where(w).delete()` — returns `Row \| null` instead of throwing `P2025` |
 | `upsert({ where: w, create, update })` | `.where(w).upsert(...)` |
 | `updateMany` / `deleteMany` | `.where(...).updateAndCount(d)` / `.where(...).deleteAndCount()` — these return a bare `number`, not `{ count }`; return `{ count }` at the public boundary to preserve the v7 `BatchPayload` shape. A filter-less `updateMany` needs `.where({})` |
-| `count()` | `.aggregate((a) => ({ n: a.count() }))` |
+| `count()` | `.aggregate((a) => ({ n: a.count() }))` (returns one object, not an array) |
+| `aggregate({ _sum: { f: true } })` | `.aggregate((a) => ({ total: a.sum("f") }))` (`avg`/`min`/`max` likewise take the field name; `sumBigInt` for a lossless BigInt result) |
 | `include: { rel: true }` | `.include("rel")` |
 | `select: { a: true }` | `.select("a")` |
 | `$transaction` | v8 transaction API (Task 6) |
