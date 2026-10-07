@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { createNotification } from '../../services/notificationService.js';
 import { getRequestFilledEmail } from '../../utils/emailTemplates/requestFilledEmail.js';
 import { convertBigInts } from '../../lib/serialization.js';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
 
 // Helper: Build threaded comments for requests (up to 4 levels, with hasMoreReplies)
 async function buildThreadedCommentsForRequest(comments: any[], opUserId: string, level = 0): Promise<any[]> {
@@ -12,14 +12,17 @@ async function buildThreadedCommentsForRequest(comments: any[], opUserId: string
       let replies: any[] = [];
       let hasMoreReplies = false;
       if (level < 4) {
-        replies = await prisma.comment.findMany({
-          where: { parentId: comment.id, deleted: false },
-          orderBy: { createdAt: 'asc' },
-          include: { user: true, votes: true },
-        });
+        replies = await db.orm.public.Comment
+          .where({ parentId: comment.id, deleted: false })
+          .orderBy((c: any) => c.createdAt.asc())
+          .include('user')
+          .include('votes')
+          .all();
       } else if (level === 4) {
-        const count = await prisma.comment.count({ where: { parentId: comment.id, deleted: false } });
-        hasMoreReplies = count > 0;
+        const countResult = await db.orm.public.Comment
+          .where({ parentId: comment.id, deleted: false })
+          .aggregate((a: any) => ({ n: a.count() }));
+        hasMoreReplies = Number(countResult.n) > 0;
       }
       return {
         id: comment.id,
@@ -51,18 +54,25 @@ export async function listRequestsHandler(request: FastifyRequest, reply: Fastif
   const where: any = {};
   if (status) where.status = status;
   if (categoryId) where.categoryId = categoryId;
-  if (q) where.title = { contains: q, mode: 'insensitive' };
-  const [requests, total] = await Promise.all([
-    prisma.request.findMany({
-      where,
-      skip,
-      take: Number(limit),
-      orderBy: { createdAt: 'desc' },
-      include: { user: { select: { id: true, username: true } }, filledBy: { select: { id: true, username: true } }, filledTorrent: { select: { id: true, name: true } }, category: true }
-    }),
-    prisma.request.count({ where })
+
+  let query = db.orm.public.Request.where(where);
+  if (q) {
+    query = query.where((m: any) => m.title.ilike(`%${q}%`));
+  }
+  const [requests, totalResult] = await Promise.all([
+    query
+      .offset(skip)
+      .limit(Number(limit))
+      .orderBy((r: any) => r.createdAt.desc())
+      .include('user', (u: any) => u.select('id', 'username'))
+      .include('filledBy', (f: any) => f.select('id', 'username'))
+      .include('filledTorrent', (ft: any) => ft.select('id', 'name'))
+      .include('category')
+      .all(),
+    query.aggregate((a: any) => ({ n: a.count() }))
   ]);
-  return reply.send({ requests, total, page: Number(page), limit: Number(limit) });
+  const total = totalResult.n;
+  return reply.send(convertBigInts({ requests, total, page: Number(page), limit: Number(limit) }));
 }
 
 export async function createRequestHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -70,20 +80,23 @@ export async function createRequestHandler(request: FastifyRequest, reply: Fasti
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   const { title, description, categoryId } = request.body as any;
   if (!title) return reply.status(400).send({ error: 'Title is required' });
-  const req = await prisma.request.create({
-    data: { userId: user.id, title, description, categoryId }
+  const req = await db.orm.public.Request.create({
+    userId: user.id, title, description, categoryId
   });
-  return reply.status(201).send(req);
+  return reply.status(201).send(convertBigInts(req));
 }
 
 export async function getRequestHandler(request: FastifyRequest, reply: FastifyReply) {
   const { id } = request.params as any;
-  const req = await prisma.request.findUnique({
-    where: { id },
-    include: { user: { select: { id: true, username: true } }, filledBy: { select: { id: true, username: true } }, filledTorrent: { select: { id: true, name: true } }, category: true }
-  });
+  const req = await db.orm.public.Request
+    .where({ id })
+    .include('user', (u: any) => u.select('id', 'username'))
+    .include('filledBy', (f: any) => f.select('id', 'username'))
+    .include('filledTorrent', (ft: any) => ft.select('id', 'name'))
+    .include('category')
+    .first();
   if (!req) return reply.status(404).send({ error: 'Request not found' });
-  return reply.send(req);
+  return reply.send(convertBigInts(req));
 }
 
 export async function fillRequestHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -91,22 +104,22 @@ export async function fillRequestHandler(request: FastifyRequest, reply: Fastify
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
   const { id } = request.params as any;
   const { torrentId } = request.body as any;
-  const req = await prisma.request.findUnique({ where: { id } });
+  const req = await db.orm.public.Request.where({ id }).first();
   if (!req) return reply.status(404).send({ error: 'Request not found' });
   if (req.status !== 'OPEN') return reply.status(400).send({ error: 'Request is not open' });
   // Optionally: check if torrent exists and is approved
-  const torrent = await prisma.torrent.findUnique({ where: { id: torrentId, isApproved: true } });
+  const torrent = await db.orm.public.Torrent.where({ id: torrentId, isApproved: true }).first();
   if (!torrent) return reply.status(400).send({ error: 'Invalid or unapproved torrent' });
-  const updated = await prisma.request.update({
-    where: { id },
-    data: { status: 'FILLED', filledById: user.id, filledTorrentId: torrent.id }
+  const updated = await db.orm.public.Request.where({ id }).update({
+    status: 'FILLED', filledById: user.id, filledTorrentId: torrent.id
   });
+  if (!updated) throw new Error('Request not found');
   // Notify requestor
   let notificationSent = false;
   let notificationError = null;
   if (req.userId) {
     try {
-      const requestUser = await prisma.user.findUnique({ where: { id: req.userId } });
+      const requestUser = await db.orm.public.User.where({ id: req.userId }).first();
       if (requestUser) {
         const { text, html } = getRequestFilledEmail({ username: requestUser.username, requestTitle: req.title, torrentName: torrent.name });
         await createNotification({
@@ -126,26 +139,27 @@ export async function fillRequestHandler(request: FastifyRequest, reply: Fastify
       notificationError = error instanceof Error ? error.message : 'Unknown error';
     }
   }
-  
-  return reply.send({
+
+  return reply.send(convertBigInts({
     ...updated,
     notificationSent,
     notificationError
-  });
+  }));
 }
 
 // GET /requests/:id/comments
 export async function listCommentsForRequestHandler(request: FastifyRequest, reply: FastifyReply) {
   const { id } = request.params as any;
-  const req = await prisma.request.findUnique({ where: { id } });
+  const req = await db.orm.public.Request.where({ id }).first();
   if (!req) return reply.status(404).send({ error: 'Request not found' });
   // OP is request creator
   const opUserId = req.userId;
-  const rootComments = await prisma.comment.findMany({
-    where: { requestId: id, parentId: null, deleted: false },
-    orderBy: { createdAt: 'asc' },
-    include: { user: true, votes: true },
-  });
+  const rootComments = await db.orm.public.Comment
+    .where({ requestId: id, parentId: null, deleted: false })
+    .orderBy((c: any) => c.createdAt.asc())
+    .include('user')
+    .include('votes')
+    .all();
   const threaded = await buildThreadedCommentsForRequest(rootComments, opUserId);
   return reply.send(convertBigInts(threaded));
 }
@@ -161,19 +175,19 @@ export async function createCommentForRequestHandler(request: FastifyRequest, re
   }
   // Check parent (if replying)
   if (parentId) {
-    const parent = await prisma.comment.findUnique({ where: { id: parentId } });
+    const parent = await db.orm.public.Comment.where({ id: parentId }).first();
     if (!parent || parent.requestId !== id) {
       return reply.status(400).send({ error: 'Invalid parent comment' });
     }
   }
-  const comment = await prisma.comment.create({
-    data: {
+  const comment = await db.orm.public.Comment
+    .include('user')
+    .include('votes')
+    .create({
       content,
       userId: user.id,
       requestId: id,
       parentId: parentId || null,
-    },
-    include: { user: true, votes: true },
-  });
+    });
   return reply.status(201).send(convertBigInts(comment));
-} 
+}

@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { getSeederLeecherCounts, getCompletedCount } from '../../announce_features/peerList.js';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
+import { convertBigInts } from '../../lib/serialization.js';
 
 /**
  * Get all torrents uploaded by the current user
@@ -16,36 +17,24 @@ export async function getUserTorrentsHandler(request: FastifyRequest, reply: Fas
 
   try {
     // Get user's torrents with basic info
-    const [torrents, total] = await Promise.all([
-      prisma.torrent.findMany({
-        where: { uploaderId: user.id },
-        skip,
-        take,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          name: true,
-          size: true,
-          createdAt: true,
-          isApproved: true,
-          isRejected: true,
-          isAnonymous: true,
-          freeleech: true,
-          rejectionReason: true,
-          category: {
-            select: {
-              id: true,
-              name: true
-            }
-          }
-        }
-      }),
-      prisma.torrent.count({ where: { uploaderId: user.id } })
+    const [torrents, totalResult] = await Promise.all([
+      db.orm.public.Torrent
+        .where({ uploaderId: user.id })
+        .offset(skip)
+        .limit(take)
+        .orderBy((t: any) => t.createdAt.desc())
+        .select('id', 'name', 'size', 'createdAt', 'isApproved', 'isRejected', 'isAnonymous', 'freeleech', 'rejectionReason')
+        .include('category', (c: any) => c.select('id', 'name'))
+        .all(),
+      db.orm.public.Torrent
+        .where({ uploaderId: user.id })
+        .aggregate((a: any) => ({ n: a.count() }))
     ]);
+    const total = totalResult.n;
 
     // Calculate stats for each torrent (seeders, leechers, downloads)
     const torrentsWithStats = await Promise.all(
-      torrents.map(async (torrent) => {
+      torrents.map(async (torrent: any) => {
         const [seederLeecherCounts, completedCount] = await Promise.all([
           getSeederLeecherCounts(torrent.id),
           getCompletedCount(torrent.id)
@@ -62,12 +51,12 @@ export async function getUserTorrentsHandler(request: FastifyRequest, reply: Fas
       })
     );
 
-    return reply.send({
+    return reply.send(convertBigInts({
       torrents: torrentsWithStats,
       total,
       page: Number(page),
       limit: take
-    });
+    }));
   } catch (error) {
     console.error('[getUserTorrentsHandler] Error:', error);
     return reply.status(500).send({ error: 'Failed to fetch user torrents' });

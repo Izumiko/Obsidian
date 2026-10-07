@@ -1,5 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { prisma } from '../../lib/prisma.js';
+import { db } from '../../lib/prisma.js';
+import { parseTimestamp } from '../../lib/timestamps.js';
+import { convertBigInts } from '../../lib/serialization.js';
 
 // Returns torrents the user is currently seeding or leeching (live)
 export async function getActiveTorrentsHandler(request: FastifyRequest, reply: FastifyReply) {
@@ -7,14 +9,15 @@ export async function getActiveTorrentsHandler(request: FastifyRequest, reply: F
   if (!user) return reply.status(401).send({ error: 'Unauthorized' });
 
   // Get the latest announce per (torrentId, peerId) for this user
-  const announces = await prisma.announce.findMany({
-    where: { userId: user.id },
-    orderBy: [{ lastAnnounceAt: 'desc' }],
-    select: { torrentId: true, left: true, event: true, lastAnnounceAt: true, torrent: { select: { id: true, name: true, infoHash: true, size: true, categoryId: true, createdAt: true } } }
-  });
+  const announces = await db.orm.public.Announce
+    .where({ userId: user.id })
+    .orderBy((a: any) => a.lastAnnounceAt.desc())
+    .select('torrentId', 'left', 'event', 'lastAnnounceAt')
+    .include('torrent', (t: any) => t.select('id', 'name', 'infoHash', 'size', 'categoryId', 'createdAt'))
+    .all();
 
   // Convert BigInt values to numbers for JSON serialization
-  const processedAnnounces = announces.map(a => ({
+  const processedAnnounces = announces.map((a: any) => ({
     ...a,
     left: Number(a.left),
     torrent: {
@@ -26,7 +29,7 @@ export async function getActiveTorrentsHandler(request: FastifyRequest, reply: F
   // Group by torrentId, keep the most recent announce for each
   const latestByTorrent: Record<string, typeof processedAnnounces[0]> = {};
   for (const a of processedAnnounces) {
-    if (!latestByTorrent[a.torrentId] || a.lastAnnounceAt > latestByTorrent[a.torrentId].lastAnnounceAt) {
+    if (!latestByTorrent[a.torrentId] || parseTimestamp(a.lastAnnounceAt) > parseTimestamp(latestByTorrent[a.torrentId].lastAnnounceAt)) {
       latestByTorrent[a.torrentId] = a;
     }
   }
@@ -39,5 +42,5 @@ export async function getActiveTorrentsHandler(request: FastifyRequest, reply: F
     else leeching.push(a.torrent);
   }
 
-  return reply.send({ seeding, leeching });
-} 
+  return reply.send(convertBigInts({ seeding, leeching }));
+}

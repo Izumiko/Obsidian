@@ -663,6 +663,11 @@ Each group below is one task. For every task:
 | `update({ data: { updatedAt: new Date() } })` | `updatedAt: toTimestamp(new Date().toISOString())`; likewise raw params that carried a `Date` now carry `toTimestamp(...)` |
 | writing a `Date` into a nullable timestamp filter (`{ gt: new Date() }`) | `{ gt: toTimestamp(new Date().toISOString()) }` — the codec rejects a JS `Date` on encode |
 | returning a row/array carrying `DateTime` columns | wrap the response in `convertBigInts(...)` (`src/lib/serialization.ts`); v7 `Date` serialized to ISO 8601, v8 decodes to PostgreSQL text so the helper restores the ISO output |
+| `findFirst()` with no filter | `Model.first()` (no `.where` needed; `Config.first()`, `Config.first({ id: 1 })`) |
+| Chained `where` shorthand + combinator | `.where({ a, b }).where((m) => or(...)).where((m) => m.t.gte(x))` — the object shorthand and predicate functions can be chained; no explicit `and(...)` wrapper is needed (Task 13: invites, activity windows) |
+| `count()` result used in JS arithmetic | some model where-builders type the aggregate reducer's `n` as `unknown` (seen on `Invite`, `Comment`, `UserActivity`); coerce with `Number(result.n)` before comparing/`Math.ceil` |
+| reading a `DateTime` out of a `select` for manual re-serialization (e.g. RSS `pubDate: torrent.createdAt.toUTCString()`) | values decode to PostgreSQL text, so `new Date(parseTimestamp(value)).toUTCString()`; wrapping the whole response in `convertBigInts(...)` covers the JSON paths |
+| dynamic `orderBy` from a `sort` query param | pick the accessor in a predicate: `buildOrder(sort)` returning `m.createdAt.desc()` / `m.name.asc()` / `m.size.desc()` and pass it to `.orderBy(...)` (Task 13: tags/search) |
 
 Referenced relation (inferred contract uses `@@map` table names; model accessor stays the
 model name): `prisma.user` → `db.orm.public.User`.
