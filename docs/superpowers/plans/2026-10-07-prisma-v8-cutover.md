@@ -637,6 +637,15 @@ Each group below is one task. For every task:
 | `select: { a: true }` | `.select("a")` |
 | `$transaction` | v8 transaction API (Task 6) |
 | `$executeRaw` / `$queryRaw` | `db.sql` / `db.raw` (Task 6) |
+| `where: { a, b }` | `.where({ a, b })` (shorthand equality) |
+| `where: { a: { not: x } }` | `.where((m) => m.a.neq(x))` |
+| `where: { t: { gte: d } }` | `.where((m) => m.t.gte(d))` (`gt`/`lt`/`lte`/`in`/`notIn`/`isNull`/`isNotNull` likewise) |
+| `where: { OR: [...] }` | `.where((m) => or(...))`; import `and`/`or`/`not`/`all` from `@prisma/orm-postgres/orm-client` |
+| `orderBy: { f: 'desc' }` | `.orderBy((m) => m.f.desc())` (array for multiple keys) |
+| `take: n` / `skip: n` | `.limit(n)` / `.offset(n)` |
+| `distinct: ['a']` | `.distinct("a")` (after `.select(...)`) |
+| `data: { n: { increment: k } }` | **No v8 equivalent on PostgreSQL.** Raw SQL: ``db.raw.sql`UPDATE "T" SET "n" = "n" + ${k} WHERE "id" = ${id}`.affectedCount().build()`` then `await db.runtime().execute(plan)` |
+| `DateTime` input (`Date`) | `TimestampString(3)` is a branded string: pass PostgreSQL text, cast with `as TimestampString<3>` (from `@prisma/orm-postgres/target/codec-types`) |
 
 Referenced relation (inferred contract uses `@@map` table names; model accessor stays the
 model name): `prisma.user` → `db.orm.public.User`.
