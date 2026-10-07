@@ -1,10 +1,10 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import AdminDashboardWrapper from '@/app/admin/components/AdminDashboardWrapper';
-import { getPreferredLanguage, serverT } from '@/app/lib/server-i18n';
 import SettingsContent from './components/SettingsContent';
 import { LanguageSelector } from '@/app/components/LanguageSelector';
-import { LanguageSync } from '@/app/components/LanguageSync';
+import { useI18n } from '@/app/hooks/useI18n';
 
 function SettingsSkeleton() {
   return (
@@ -44,104 +44,102 @@ function SettingsSkeleton() {
   );
 }
 
-export default async function AdminSettingsPage() {
-  const hdrs = await headers();
-  const language = await getPreferredLanguage(hdrs);
+export default function AdminSettingsPage() {
+  const { t, language } = useI18n();
 
   const translations = {
-    title: serverT('admin.settings.title', language),
-    description: serverT('admin.settings.description', language),
+    title: t('admin.settings.title'),
+    description: t('admin.settings.description'),
     sections: {
-      tracker: serverT('admin.settings.sections.tracker', language),
-      ratio: serverT('admin.settings.sections.ratio', language),
-      announce: serverT('admin.settings.sections.announce', language),
-      clients: serverT('admin.settings.sections.clients', language),
-      invitations: serverT('admin.settings.sections.invitations', language),
-      rss: serverT('admin.settings.sections.rss', language),
-      storage: serverT('admin.settings.sections.storage', language),
-      smtp: serverT('admin.settings.sections.smtp', language),
-      antiCheat: serverT('admin.settings.sections.antiCheat', language),
-      branding: serverT('admin.settings.sections.branding', language),
+      tracker: t('admin.settings.sections.tracker'),
+      ratio: t('admin.settings.sections.ratio'),
+      announce: t('admin.settings.sections.announce'),
+      clients: t('admin.settings.sections.clients'),
+      invitations: t('admin.settings.sections.invitations'),
+      rss: t('admin.settings.sections.rss'),
+      storage: t('admin.settings.sections.storage'),
+      smtp: t('admin.settings.sections.smtp'),
+      antiCheat: t('admin.settings.sections.antiCheat'),
+      branding: t('admin.settings.sections.branding'),
     },
     details: {
-      tracker: serverT('admin.settings.tracker.description', language),
-      ratio: serverT('admin.settings.ratio.description', language),
-      announce: serverT('admin.settings.announce.description', language),
-      clients: serverT('admin.settings.clients.description', language),
-      invitations: serverT('admin.settings.invitations.description', language),
-      rss: serverT('admin.settings.rss.description', language),
-      storage: serverT('admin.settings.storage.description', language),
-      smtp: serverT('admin.settings.smtp.description', language),
-      antiCheat: serverT('admin.settings.antiCheat.description', language),
-      branding: serverT('admin.settings.branding.description', language),
+      tracker: t('admin.settings.tracker.description'),
+      ratio: t('admin.settings.ratio.description'),
+      announce: t('admin.settings.announce.description'),
+      clients: t('admin.settings.clients.description'),
+      invitations: t('admin.settings.invitations.description'),
+      rss: t('admin.settings.rss.description'),
+      storage: t('admin.settings.storage.description'),
+      smtp: t('admin.settings.smtp.description'),
+      antiCheat: t('admin.settings.antiCheat.description'),
+      branding: t('admin.settings.branding.description'),
     },
     settings: {
       ui: {
-        sectionsTitle: serverT('admin.settings.ui.sectionsTitle', language),
-        save: serverT('admin.settings.ui.save', language),
-        saving: serverT('admin.settings.ui.saving', language),
-        saved: serverT('admin.settings.ui.saved', language),
-        errorLoading: serverT('admin.settings.ui.errorLoading', language),
-        errorSaving: serverT('admin.settings.ui.errorSaving', language),
-        on: serverT('admin.settings.ui.on', language),
-        off: serverT('admin.settings.ui.off', language),
-        enabled: serverT('admin.settings.ui.enabled', language),
-        disabled: serverT('admin.settings.ui.disabled', language),
-        smtpTest: serverT('admin.settings.ui.smtpTest', language),
-        smtpSuccess: serverT('admin.settings.ui.smtpSuccess', language),
-        smtpError: serverT('admin.settings.ui.smtpError', language),
+        sectionsTitle: t('admin.settings.ui.sectionsTitle'),
+        save: t('admin.settings.ui.save'),
+        saving: t('admin.settings.ui.saving'),
+        saved: t('admin.settings.ui.saved'),
+        errorLoading: t('admin.settings.ui.errorLoading'),
+        errorSaving: t('admin.settings.ui.errorSaving'),
+        on: t('admin.settings.ui.on'),
+        off: t('admin.settings.ui.off'),
+        enabled: t('admin.settings.ui.enabled'),
+        disabled: t('admin.settings.ui.disabled'),
+        smtpTest: t('admin.settings.ui.smtpTest'),
+        smtpSuccess: t('admin.settings.ui.smtpSuccess'),
+        smtpError: t('admin.settings.ui.smtpError'),
       },
       ratioPresets: {
-        title: serverT('admin.settings.ratioPresets.title', language),
-        easy: serverT('admin.settings.ratioPresets.easy', language),
-        balanced: serverT('admin.settings.ratioPresets.balanced', language),
-        strict: serverT('admin.settings.ratioPresets.strict', language),
-        custom: serverT('admin.settings.ratioPresets.custom', language),
-        active: serverT('admin.settings.ratioPresets.active', language),
-        manualTitle: serverT('admin.settings.ratioPresets.manualTitle', language),
-        customBadge: serverT('admin.settings.ratioPresets.customBadge', language),
+        title: t('admin.settings.ratioPresets.title'),
+        easy: t('admin.settings.ratioPresets.easy'),
+        balanced: t('admin.settings.ratioPresets.balanced'),
+        strict: t('admin.settings.ratioPresets.strict'),
+        custom: t('admin.settings.ratioPresets.custom'),
+        active: t('admin.settings.ratioPresets.active'),
+        manualTitle: t('admin.settings.ratioPresets.manualTitle'),
+        customBadge: t('admin.settings.ratioPresets.customBadge'),
       },
     },
     fields: {
-      registrationMode: serverT('admin.settings.fields.registrationMode', language),
-      requireTorrentApproval: serverT('admin.settings.fields.requireTorrentApproval', language),
-      minRatio: serverT('admin.settings.fields.minRatio', language),
-      bonusPointsPerHour: serverT('admin.settings.fields.bonusPointsPerHour', language),
-      hitAndRunThreshold: serverT('admin.settings.fields.hitAndRunThreshold', language),
-      requiredSeedingMinutes: serverT('admin.settings.fields.requiredSeedingMinutes', language),
-      defaultAnnounceInterval: serverT('admin.settings.fields.defaultAnnounceInterval', language),
-      minAnnounceInterval: serverT('admin.settings.fields.minAnnounceInterval', language),
-      whitelistedClients: serverT('admin.settings.fields.whitelistedClients', language),
-      blacklistedClients: serverT('admin.settings.fields.blacklistedClients', language),
-      allowedFingerprints: serverT('admin.settings.fields.allowedFingerprints', language),
-      rssDefaultCount: serverT('admin.settings.fields.rssDefaultCount', language),
-      inviteExpiryHours: serverT('admin.settings.fields.inviteExpiryHours', language),
-      maxInvitesPerUser: serverT('admin.settings.fields.maxInvitesPerUser', language),
-      storageType: serverT('admin.settings.fields.storageType', language),
-      s3Bucket: serverT('admin.settings.fields.s3Bucket', language),
-      s3Region: serverT('admin.settings.fields.s3Region', language),
-      s3AccessKeyId: serverT('admin.settings.fields.s3AccessKeyId', language),
-      s3SecretAccessKey: serverT('admin.settings.fields.s3SecretAccessKey', language),
-      smtpHost: serverT('admin.settings.fields.smtpHost', language),
-      smtpPort: serverT('admin.settings.fields.smtpPort', language),
-      smtpUser: serverT('admin.settings.fields.smtpUser', language),
-      smtpPass: serverT('admin.settings.fields.smtpPass', language),
-      smtpFrom: serverT('admin.settings.fields.smtpFrom', language),
-      ghostLeechingCheck: serverT('admin.settings.fields.ghostLeechingCheck', language),
-      cheatingClientCheck: serverT('admin.settings.fields.cheatingClientCheck', language),
-      ipAbuseCheck: serverT('admin.settings.fields.ipAbuseCheck', language),
-      announceRateCheck: serverT('admin.settings.fields.announceRateCheck', language),
-      invalidStatsCheck: serverT('admin.settings.fields.invalidStatsCheck', language),
-      peerBanCheck: serverT('admin.settings.fields.peerBanCheck', language),
-      maxStatsJumpMultiplier: serverT('admin.settings.fields.maxStatsJumpMultiplier', language),
-      brandingName: serverT('admin.settings.fields.brandingName', language),
-      showHomePageStats: serverT('admin.settings.fields.showHomePageStats', language),
+      registrationMode: t('admin.settings.fields.registrationMode'),
+      requireTorrentApproval: t('admin.settings.fields.requireTorrentApproval'),
+      minRatio: t('admin.settings.fields.minRatio'),
+      bonusPointsPerHour: t('admin.settings.fields.bonusPointsPerHour'),
+      hitAndRunThreshold: t('admin.settings.fields.hitAndRunThreshold'),
+      requiredSeedingMinutes: t('admin.settings.fields.requiredSeedingMinutes'),
+      defaultAnnounceInterval: t('admin.settings.fields.defaultAnnounceInterval'),
+      minAnnounceInterval: t('admin.settings.fields.minAnnounceInterval'),
+      whitelistedClients: t('admin.settings.fields.whitelistedClients'),
+      blacklistedClients: t('admin.settings.fields.blacklistedClients'),
+      allowedFingerprints: t('admin.settings.fields.allowedFingerprints'),
+      rssDefaultCount: t('admin.settings.fields.rssDefaultCount'),
+      inviteExpiryHours: t('admin.settings.fields.inviteExpiryHours'),
+      maxInvitesPerUser: t('admin.settings.fields.maxInvitesPerUser'),
+      storageType: t('admin.settings.fields.storageType'),
+      s3Bucket: t('admin.settings.fields.s3Bucket'),
+      s3Region: t('admin.settings.fields.s3Region'),
+      s3AccessKeyId: t('admin.settings.fields.s3AccessKeyId'),
+      s3SecretAccessKey: t('admin.settings.fields.s3SecretAccessKey'),
+      smtpHost: t('admin.settings.fields.smtpHost'),
+      smtpPort: t('admin.settings.fields.smtpPort'),
+      smtpUser: t('admin.settings.fields.smtpUser'),
+      smtpPass: t('admin.settings.fields.smtpPass'),
+      smtpFrom: t('admin.settings.fields.smtpFrom'),
+      ghostLeechingCheck: t('admin.settings.fields.ghostLeechingCheck'),
+      cheatingClientCheck: t('admin.settings.fields.cheatingClientCheck'),
+      ipAbuseCheck: t('admin.settings.fields.ipAbuseCheck'),
+      announceRateCheck: t('admin.settings.fields.announceRateCheck'),
+      invalidStatsCheck: t('admin.settings.fields.invalidStatsCheck'),
+      peerBanCheck: t('admin.settings.fields.peerBanCheck'),
+      maxStatsJumpMultiplier: t('admin.settings.fields.maxStatsJumpMultiplier'),
+      brandingName: t('admin.settings.fields.brandingName'),
+      showHomePageStats: t('admin.settings.fields.showHomePageStats'),
     }
   };
 
   return (
     <AdminDashboardWrapper>
-      <LanguageSync serverLanguage={language} />
       <div className="fixed bottom-4 left-4 z-50">
         <LanguageSelector currentLanguage={language} />
       </div>

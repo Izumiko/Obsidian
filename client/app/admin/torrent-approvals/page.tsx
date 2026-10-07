@@ -1,11 +1,10 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import AdminDashboardWrapper from '@/app/admin/components/AdminDashboardWrapper';
-import { getPreferredLanguage, getTranslations } from '@/app/lib/server-i18n';
 import { LanguageSelector } from '@/app/components/LanguageSelector';
-import { LanguageSync } from '@/app/components/LanguageSync';
 import TorrentApprovalsClient from './TorrentApprovalsClient';
-import { I18nProvider } from '@/app/hooks/I18nProvider';
+import { useI18n } from '@/app/hooks/useI18n';
 
 // Skeleton component for loading state
 function TorrentApprovalsSkeleton() {
@@ -50,25 +49,18 @@ function TorrentApprovalsSkeleton() {
   );
 }
 
-export default async function TorrentApprovalsPage() {
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
-  const resources = getTranslations(language);
+export default function TorrentApprovalsPage() {
+  const { language } = useI18n();
 
   return (
     <AdminDashboardWrapper>
-      <Suspense fallback={null}>
-        <LanguageSync serverLanguage={language} />
-      </Suspense>
       <Suspense fallback={<div className="fixed bottom-4 left-4 z-50 w-20 h-10 bg-gray-200 rounded animate-pulse" />}>
         <div className="fixed bottom-4 left-4 z-50">
           <LanguageSelector currentLanguage={language} />
         </div>
       </Suspense>
       <Suspense fallback={<TorrentApprovalsSkeleton />}>
-        <I18nProvider resources={resources as Record<string, unknown>}>
-          <TorrentApprovalsClient />
-        </I18nProvider>
+        <TorrentApprovalsClient />
       </Suspense>
     </AdminDashboardWrapper>
   );

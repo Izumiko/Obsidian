@@ -1,10 +1,10 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import AdminDashboardWrapper from '../components/AdminDashboardWrapper';
-import { getPreferredLanguage, serverT } from '@/app/lib/server-i18n';
 import UsersClient from './components/UsersClient';
 import { LanguageSelector } from '@/app/components/LanguageSelector';
-import { LanguageSync } from '@/app/components/LanguageSync';
+import { useI18n } from '@/app/hooks/useI18n';
 
 function UsersSkeleton() {
   return (
@@ -25,72 +25,70 @@ function UsersSkeleton() {
   );
 }
 
-export default async function AdminUsersPage() {
-  const hdrs = await headers();
-  const language = await getPreferredLanguage(hdrs);
+export default function AdminUsersPage() {
+  const { t, language } = useI18n();
 
   const translations = {
-    title: serverT('admin.users.title', language),
-    description: serverT('admin.users.description', language),
-    search: serverT('admin.users.search', language),
-    searching: serverT('admin.users.searching', language),
-    searchPlaceholder: serverT('admin.users.searchPlaceholder', language),
-    users: serverT('admin.users.users', language),
-    noUsers: serverT('admin.users.noUsers', language),
-    editUser: serverT('admin.users.editUser', language),
-    userDetails: serverT('admin.users.userDetails', language),
-    username: serverT('admin.users.username', language),
-    email: serverT('admin.users.email', language),
-    role: serverT('admin.users.role', language),
-    status: serverT('admin.users.status', language),
-    emailVerified: serverT('admin.users.emailVerified', language),
-    createdAt: serverT('admin.users.createdAt', language),
-    actions: serverT('admin.users.actions', language),
-    edit: serverT('admin.users.edit', language),
-    ban: serverT('admin.users.ban', language),
-    unban: serverT('admin.users.unban', language),
-    enable: serverT('admin.users.enable', language),
-    promote: serverT('admin.users.promote', language),
-    demote: serverT('admin.users.demote', language),
-    close: serverT('admin.users.close', language),
-    save: serverT('admin.users.save', language),
-    saving: serverT('admin.users.saving', language),
-    cancel: serverT('admin.users.cancel', language),
-    confirmBan: serverT('admin.users.confirmBan', language),
-    confirmUnban: serverT('admin.users.confirmUnban', language),
-    confirmPromote: serverT('admin.users.confirmPromote', language),
-    confirmDemote: serverT('admin.users.confirmDemote', language),
-    userBanned: serverT('admin.users.userBanned', language),
-    userUnbanned: serverT('admin.users.userUnbanned', language),
-    userPromoted: serverT('admin.users.userPromoted', language),
-    userDemoted: serverT('admin.users.userDemoted', language),
-    userUpdated: serverT('admin.users.userUpdated', language),
-    errorLoading: serverT('admin.users.errorLoading', language),
-    errorUpdating: serverT('admin.users.errorUpdating', language),
-    errorBanning: serverT('admin.users.errorBanning', language),
-    errorUnbanning: serverT('admin.users.errorUnbanning', language),
-    errorPromoting: serverT('admin.users.errorPromoting', language),
-    errorDemoting: serverT('admin.users.errorDemoting', language),
-    loading: serverT('admin.users.loading', language),
+    title: t('admin.users.title'),
+    description: t('admin.users.description'),
+    search: t('admin.users.search'),
+    searching: t('admin.users.searching'),
+    searchPlaceholder: t('admin.users.searchPlaceholder'),
+    users: t('admin.users.users'),
+    noUsers: t('admin.users.noUsers'),
+    editUser: t('admin.users.editUser'),
+    userDetails: t('admin.users.userDetails'),
+    username: t('admin.users.username'),
+    email: t('admin.users.email'),
+    role: t('admin.users.role'),
+    status: t('admin.users.status'),
+    emailVerified: t('admin.users.emailVerified'),
+    createdAt: t('admin.users.createdAt'),
+    actions: t('admin.users.actions'),
+    edit: t('admin.users.edit'),
+    ban: t('admin.users.ban'),
+    unban: t('admin.users.unban'),
+    enable: t('admin.users.enable'),
+    promote: t('admin.users.promote'),
+    demote: t('admin.users.demote'),
+    close: t('admin.users.close'),
+    save: t('admin.users.save'),
+    saving: t('admin.users.saving'),
+    cancel: t('admin.users.cancel'),
+    confirmBan: t('admin.users.confirmBan'),
+    confirmUnban: t('admin.users.confirmUnban'),
+    confirmPromote: t('admin.users.confirmPromote'),
+    confirmDemote: t('admin.users.confirmDemote'),
+    userBanned: t('admin.users.userBanned'),
+    userUnbanned: t('admin.users.userUnbanned'),
+    userPromoted: t('admin.users.userPromoted'),
+    userDemoted: t('admin.users.userDemoted'),
+    userUpdated: t('admin.users.userUpdated'),
+    errorLoading: t('admin.users.errorLoading'),
+    errorUpdating: t('admin.users.errorUpdating'),
+    errorBanning: t('admin.users.errorBanning'),
+    errorUnbanning: t('admin.users.errorUnbanning'),
+    errorPromoting: t('admin.users.errorPromoting'),
+    errorDemoting: t('admin.users.errorDemoting'),
+    loading: t('admin.users.loading'),
     roles: {
-      USER: serverT('admin.users.roles.USER', language),
-      MOD: serverT('admin.users.roles.MOD', language),
-      ADMIN: serverT('admin.users.roles.ADMIN', language),
-      OWNER: serverT('admin.users.roles.OWNER', language),
-      FOUNDER: serverT('admin.users.roles.FOUNDER', language),
+      USER: t('admin.users.roles.USER'),
+      MOD: t('admin.users.roles.MOD'),
+      ADMIN: t('admin.users.roles.ADMIN'),
+      OWNER: t('admin.users.roles.OWNER'),
+      FOUNDER: t('admin.users.roles.FOUNDER'),
     },
     statuses: {
-      ACTIVE: serverT('admin.users.statuses.ACTIVE', language),
-      BANNED: serverT('admin.users.statuses.BANNED', language),
-      DISABLED: serverT('admin.users.statuses.DISABLED', language),
+      ACTIVE: t('admin.users.statuses.ACTIVE'),
+      BANNED: t('admin.users.statuses.BANNED'),
+      DISABLED: t('admin.users.statuses.DISABLED'),
     },
-    transferFounder: serverT('admin.users.transferFounder', language),
-    founderRoleWarning: serverT('admin.users.founderRoleWarning', language),
+    transferFounder: t('admin.users.transferFounder'),
+    founderRoleWarning: t('admin.users.founderRoleWarning'),
   };
 
   return (
     <AdminDashboardWrapper>
-      <LanguageSync serverLanguage={language} />
       <div className="fixed bottom-4 left-4 z-50">
         <LanguageSelector currentLanguage={language} />
       </div>

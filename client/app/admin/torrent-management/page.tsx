@@ -1,22 +1,22 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
-import { getPreferredLanguage, serverT } from '@/app/lib/server-i18n';
 import AdminDashboardWrapper from '../components/AdminDashboardWrapper';
 import TorrentManagementClient from './TorrentManagementClient';
+import { useI18n } from '@/app/hooks/useI18n';
 
-export default async function TorrentManagementPage() {
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+export default function TorrentManagementPage() {
+  const { t } = useI18n();
 
   return (
     <AdminDashboardWrapper>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-text">
-            {serverT('admin.torrentManagement.title', language)}
+            {t('admin.torrentManagement.title')}
           </h1>
           <p className="text-text-secondary mt-2">
-            {serverT('admin.torrentManagement.description', language)}
+            {t('admin.torrentManagement.description')}
           </p>
         </div>
 
