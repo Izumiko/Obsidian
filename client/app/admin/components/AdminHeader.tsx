@@ -5,7 +5,7 @@ import { useI18n } from '@/app/hooks/useI18n';
 import Image from 'next/image';
 import AdminUserMenu from './AdminUserMenu.client';
 
-export default function AdminHeader({ brandingName = 'Obsidian Tracker', language = 'es' }: { brandingName?: string; language?: string }) {
+export default function AdminHeader({ brandingName = 'Obsidian Tracker' }: { brandingName?: string; language?: string }) {
   const { t } = useI18n();
 
   return (

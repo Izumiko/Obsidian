@@ -13,7 +13,7 @@ interface DashboardHeaderProps {
   language?: string;
 }
 
-export default function DashboardHeader({ brandingName = 'Obsidian Tracker', language = 'es' }: DashboardHeaderProps) {
+export default function DashboardHeader({ brandingName = 'Obsidian Tracker' }: DashboardHeaderProps) {
   const { t } = useI18n();
 
   const translations = {
