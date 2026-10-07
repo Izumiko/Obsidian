@@ -67,5 +67,5 @@ export function useI18n(initialLanguage?: string) {
     return fallback ?? key;
   }, [resources]);
 
-  return { t };
+  return { t, language };
 }
