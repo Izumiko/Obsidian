@@ -1,8 +1,9 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import DashboardWrapper from '../dashboard/components/DashboardWrapper';
 import CategoriesClient from './components/CategoriesClient';
-import { serverT, getPreferredLanguage } from '../lib/server-i18n';
+import { useI18n } from '../hooks/useI18n';
 
 function CategoriesSkeleton() {
   return (
@@ -44,28 +45,25 @@ function CategoriesSkeleton() {
   );
 }
 
-export default async function CategoriesPage() {
-  // Get headers for language detection
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+export default function CategoriesPage() {
+  const { t } = useI18n();
 
-  // Server-side translations
   const translations = {
-    title: serverT('sidebar.nav.categories', language),
-    description: serverT('categories.description', language),
-    popularTags: serverT('categories.popularTags', language),
-    browseCategories: serverT('categories.browseCategories', language),
-    latestTorrents: serverT('categories.latestTorrents', language),
-    viewAll: serverT('categories.viewAll', language),
-    searchPlaceholder: serverT('categories.searchPlaceholder', language),
-    noTorrents: serverT('categories.noTorrents', language),
-    seeders: serverT('categories.seeders', language),
-    leechers: serverT('categories.leechers', language),
-    completed: serverT('categories.completed', language),
-    uploaded: serverT('categories.uploaded', language),
-    by: serverT('categories.by', language),
-    size: serverT('categories.size', language),
-    loading: serverT('categories.loading', language),
+    title: t('sidebar.nav.categories'),
+    description: t('categories.description'),
+    popularTags: t('categories.popularTags'),
+    browseCategories: t('categories.browseCategories'),
+    latestTorrents: t('categories.latestTorrents'),
+    viewAll: t('categories.viewAll'),
+    searchPlaceholder: t('categories.searchPlaceholder'),
+    noTorrents: t('categories.noTorrents'),
+    seeders: t('categories.seeders'),
+    leechers: t('categories.leechers'),
+    completed: t('categories.completed'),
+    uploaded: t('categories.uploaded'),
+    by: t('categories.by'),
+    size: t('categories.size'),
+    loading: t('categories.loading'),
   };
 
   return (

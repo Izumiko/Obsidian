@@ -1,17 +1,10 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
+import { useSearchParams } from 'next/navigation';
 import DashboardWrapper from '../dashboard/components/DashboardWrapper';
 import SearchClient from './components/SearchClient';
-import { serverT, getPreferredLanguage } from '../lib/server-i18n';
-
-interface PageProps {
-  searchParams: Promise<{
-    tag?: string;
-    q?: string;
-    page?: string;
-    sort?: string;
-  }>;
-}
+import { useI18n } from '../hooks/useI18n';
 
 function SearchSkeleton() {
   return (
@@ -65,46 +58,48 @@ function SearchSkeleton() {
   );
 }
 
-export default async function SearchPage({ searchParams }: PageProps) {
-  // Get headers for language detection
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+function SearchResults() {
+  const { t } = useI18n();
+  const sp = useSearchParams();
 
-  // Await searchParams
-  const resolvedSearchParams = await searchParams;
+  const searchParams = {
+    tag: sp.get('tag') ?? undefined,
+    q: sp.get('q') ?? undefined,
+    page: sp.get('page') ?? undefined,
+    sort: sp.get('sort') ?? undefined,
+  };
 
-  // Server-side translations
   const translations = {
-    title: serverT('search.title', language),
-    description: serverT('search.description', language),
-    noResults: serverT('search.noResults', language),
-    loading: serverT('search.loading', language),
+    title: t('search.title'),
+    description: t('search.description'),
+    noResults: t('search.noResults'),
+    loading: t('search.loading'),
     filters: {
-      sortBy: serverT('search.filters.sortBy', language),
-      newest: serverT('search.filters.newest', language),
-      oldest: serverT('search.filters.oldest', language),
-      mostSeeded: serverT('search.filters.mostSeeded', language),
-      leastSeeded: serverT('search.filters.leastSeeded', language),
-      largest: serverT('search.filters.largest', language),
-      smallest: serverT('search.filters.smallest', language),
+      sortBy: t('search.filters.sortBy'),
+      newest: t('search.filters.newest'),
+      oldest: t('search.filters.oldest'),
+      mostSeeded: t('search.filters.mostSeeded'),
+      leastSeeded: t('search.filters.leastSeeded'),
+      largest: t('search.filters.largest'),
+      smallest: t('search.filters.smallest'),
     },
-        torrent: {
-          title: serverT('search.torrent.title', language),
-          seeders: serverT('search.torrent.seeders', language),
-          leechers: serverT('search.torrent.leechers', language),
-          completed: serverT('search.torrent.completed', language),
-          uploaded: serverT('search.torrent.uploaded', language),
-          by: serverT('search.torrent.by', language),
-          size: serverT('search.torrent.size', language),
-          download: serverT('search.torrent.download', language),
-          uploader: serverT('search.torrent.uploader', language),
-          category: serverT('search.torrent.category', language),
-        },
+    torrent: {
+      title: t('search.torrent.title'),
+      seeders: t('search.torrent.seeders'),
+      leechers: t('search.torrent.leechers'),
+      completed: t('search.torrent.completed'),
+      uploaded: t('search.torrent.uploaded'),
+      by: t('search.torrent.by'),
+      size: t('search.torrent.size'),
+      download: t('search.torrent.download'),
+      uploader: t('search.torrent.uploader'),
+      category: t('search.torrent.category'),
+    },
     pagination: {
-      previous: serverT('search.pagination.previous', language),
-      next: serverT('search.pagination.next', language),
-      page: serverT('search.pagination.page', language),
-      of: serverT('search.pagination.of', language),
+      previous: t('search.pagination.previous'),
+      next: t('search.pagination.next'),
+      page: t('search.pagination.page'),
+      of: t('search.pagination.of'),
     },
   };
 
@@ -113,11 +108,19 @@ export default async function SearchPage({ searchParams }: PageProps) {
       <div className="max-w-screen-2xl mx-auto px-4">
         <Suspense fallback={<SearchSkeleton />}>
           <SearchClient 
-            searchParams={resolvedSearchParams}
+            searchParams={searchParams}
             translations={translations}
           />
         </Suspense>
       </div>
     </DashboardWrapper>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<SearchSkeleton />}>
+      <SearchResults />
+    </Suspense>
   );
 }

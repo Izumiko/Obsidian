@@ -1,34 +1,32 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import DashboardWrapper from './components/DashboardWrapper';
 import DashboardClient from './components/DashboardClient';
-import { serverT, getPreferredLanguage } from '../lib/server-i18n';
+import { useI18n } from '../hooks/useI18n';
 
-export default async function DashboardPage() {
-  // Get headers for language detection
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+export default function DashboardPage() {
+  const { t } = useI18n();
 
-  // Server-side translations
   const translations = {
-    latestTorrents: serverT('dashboard.latestTorrents', language),
-    pinnedAnnouncements: serverT('dashboard.pinnedAnnouncements', language),
-    viewAll: serverT('dashboard.viewAll', language),
-    noTorrents: serverT('dashboard.noTorrents', language),
-    noAnnouncements: serverT('dashboard.noAnnouncements', language),
-    title: serverT('dashboard.title', language),
-    size: serverT('dashboard.size', language),
-    uploader: serverT('dashboard.uploader', language),
-    category: serverT('dashboard.category', language),
-    seeders: serverT('dashboard.seeders', language),
-    leechers: serverT('dashboard.leechers', language),
-    completed: serverT('dashboard.completed', language),
-    uploaded: serverT('dashboard.uploaded', language),
-    by: serverT('dashboard.by', language),
-    previous: serverT('dashboard.previous', language),
-    next: serverT('dashboard.next', language),
-    page: serverT('dashboard.page', language),
-    of: serverT('dashboard.of', language),
+    latestTorrents: t('dashboard.latestTorrents'),
+    pinnedAnnouncements: t('dashboard.pinnedAnnouncements'),
+    viewAll: t('dashboard.viewAll'),
+    noTorrents: t('dashboard.noTorrents'),
+    noAnnouncements: t('dashboard.noAnnouncements'),
+    title: t('dashboard.title'),
+    size: t('dashboard.size'),
+    uploader: t('dashboard.uploader'),
+    category: t('dashboard.category'),
+    seeders: t('dashboard.seeders'),
+    leechers: t('dashboard.leechers'),
+    completed: t('dashboard.completed'),
+    uploaded: t('dashboard.uploaded'),
+    by: t('dashboard.by'),
+    previous: t('dashboard.previous'),
+    next: t('dashboard.next'),
+    page: t('dashboard.page'),
+    of: t('dashboard.of'),
   };
 
   return (

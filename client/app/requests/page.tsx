@@ -1,7 +1,8 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import DashboardWrapper from '../dashboard/components/DashboardWrapper';
-import { serverT, getPreferredLanguage } from '../lib/server-i18n';
+import { useI18n } from '../hooks/useI18n';
 import RequestsClient from './components/RequestsClient';
 
 function RequestsSkeleton() {
@@ -27,15 +28,12 @@ function RequestsSkeleton() {
   );
 }
 
-export default async function RequestsPage() {
-  // Get headers for language detection
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+export default function RequestsPage() {
+  const { t } = useI18n();
 
-  // Server-side translations
   const translations = {
-    title: serverT('sidebar.nav.requests', language),
-    description: serverT('requests.description', language),
+    title: t('sidebar.nav.requests'),
+    description: t('requests.description'),
   };
 
   return (

@@ -1,7 +1,8 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import DashboardWrapper from '../dashboard/components/DashboardWrapper';
-import { serverT, getPreferredLanguage } from '../lib/server-i18n';
+import { useI18n } from '../hooks/useI18n';
 import BookmarksClient from './components/BookmarksClient';
 
 // Loading skeleton component
@@ -36,13 +37,12 @@ function BookmarksSkeleton() {
   );
 }
 
-export default async function BookmarksPage() {
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+export default function BookmarksPage() {
+  const { t } = useI18n();
 
   const translations = {
-    title: serverT('sidebar.nav.bookmarks', language),
-    description: serverT('bookmarks.description', language),
+    title: t('sidebar.nav.bookmarks'),
+    description: t('bookmarks.description'),
   };
 
   return (
