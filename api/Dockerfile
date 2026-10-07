@@ -5,10 +5,11 @@
 # ---------------------------------------------------------------------------
 FROM node:24-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm ci
+RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-RUN npm run bundle && rm -f build/*.map
+RUN pnpm run bundle && rm -f build/*.map
 
 # ---------------------------------------------------------------------------
 # Migrator: Prisma CLI image, runs `prisma migrate deploy`
@@ -17,10 +18,11 @@ RUN npm run bundle && rm -f build/*.map
 FROM node:24-alpine AS migrate
 WORKDIR /app
 ENV NODE_ENV=production
-COPY package*.json ./
-RUN npm ci
+RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY . .
-CMD ["npx", "prisma", "migrate", "deploy"]
+CMD ["pnpm", "exec", "prisma", "migrate", "deploy"]
 
 # ---------------------------------------------------------------------------
 # Runtime: only runs the bundled app (default target)
