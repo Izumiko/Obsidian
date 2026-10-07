@@ -1,6 +1,8 @@
+'use client';
+
 import { Suspense } from 'react';
 import Image from 'next/image';
-import { serverT } from '@/app/lib/server-i18n';
+import { useI18n } from '@/app/hooks/useI18n';
 import UserStatsBar from './UserStatsBar';
 import UploadButton from './UploadButton';
 import DashboardUserMenu from './DashboardUserMenu';
@@ -12,9 +14,11 @@ interface DashboardHeaderProps {
 }
 
 export default function DashboardHeader({ brandingName = 'Obsidian Tracker', language = 'es' }: DashboardHeaderProps) {
+  const { t } = useI18n();
+
   const translations = {
-    searchPlaceholder: serverT('header.search.placeholder', language),
-    upload: serverT('header.upload', language),
+    searchPlaceholder: t('header.search.placeholder'),
+    upload: t('header.upload'),
   };
 
   return (
@@ -65,10 +69,10 @@ export default function DashboardHeader({ brandingName = 'Obsidian Tracker', lan
             </div>
           }>
             <DashboardUserMenu translations={{
-              profile: serverT('header.userMenu.profile', language),
-              adminPanel: serverT('header.userMenu.adminPanel', language),
-              moderatorPanel: serverT('header.userMenu.moderatorPanel', language),
-              logout: serverT('header.userMenu.logout', language)
+              profile: t('header.userMenu.profile'),
+              adminPanel: t('header.userMenu.adminPanel'),
+              moderatorPanel: t('header.userMenu.moderatorPanel'),
+              logout: t('header.userMenu.logout')
             }} />
           </Suspense>
         </div>

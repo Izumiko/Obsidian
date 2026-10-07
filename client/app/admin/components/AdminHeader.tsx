@@ -1,9 +1,13 @@
+'use client';
+
 // import { Suspense } from 'react';
-import { serverT } from '@/app/lib/server-i18n';
+import { useI18n } from '@/app/hooks/useI18n';
 import Image from 'next/image';
 import AdminUserMenu from './AdminUserMenu.client';
 
 export default function AdminHeader({ brandingName = 'Obsidian Tracker', language = 'es' }: { brandingName?: string; language?: string }) {
+  const { t } = useI18n();
+
   return (
     <header className="bg-surface border-b border-border h-16 fixed top-0 left-0 right-0 z-30">
       <div className="flex items-center justify-between h-full px-6">
@@ -14,9 +18,9 @@ export default function AdminHeader({ brandingName = 'Obsidian Tracker', languag
         </div>
         <div className="flex items-center space-x-4">
           <AdminUserMenu translations={{
-            backToSite: serverT('admin.backToSite', language),
-            profile: serverT('header.userMenu.profile', language),
-            logout: serverT('header.userMenu.logout', language),
+            backToSite: t('admin.backToSite'),
+            profile: t('header.userMenu.profile'),
+            logout: t('header.userMenu.logout'),
           }} />
         </div>
       </div>
