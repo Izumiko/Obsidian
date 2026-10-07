@@ -47,8 +47,9 @@ Non-goals:
 - Toolchain note: dep commit aliases `typescript` to `@typescript/typescript6` and adds
   `@typescript/native`; `npx tsc --version` reports 7.0.2 (native compiler). `npm test`
   currently passes.
-- Package manager is ambiguous: `package-lock.json`, `bun.lock`, and `pnpm-lock.yaml` all
-  exist. Docker uses `npm ci`.
+- Package manager is pnpm (12.9.1); `pnpm-workspace.yaml` configures `allowBuilds` for
+  Prisma/esbuild. `package-lock.json` and `bun.lock` are stale leftovers; the Dockerfile
+  still uses `npm ci` and must be switched to pnpm.
 
 ## 4. Targets
 
@@ -122,6 +123,8 @@ Migrated modules import `db`; not-yet-migrated modules keep importing `prisma`. 
   `ESNext`/`bundler` values because v8 emits `contract.json`, imported with
   `with { type: "json" }`, which requires one of `esnext|node18|node20|nodenext|preserve`.
 - Docker:
+  - Dependency management moves to pnpm; both `builder` and `migrate` stages use
+    `pnpm install --frozen-lockfile` (add `corepack enable` / `pnpm` to the images).
   - The `migrate` image switches to the v8 CLI and the v8 migration loop.
   - The `runtime` image is unchanged; the single-file bundle stays self-contained
     (verified previously: `build/index.mjs` runs with no `node_modules`).
@@ -186,8 +189,9 @@ The repo currently has no integration tests; a 383-site rewrite cannot be valida
 
 ## 11. Phases
 
-- P0 — Prep: create branch (done), start local podman Postgres, pin versions, establish a
-  green baseline (lint/tsc/test/bundle), build the integration harness skeleton.
+- P0 — Prep: create branch (done), start local podman Postgres, switch local tooling and the
+  Dockerfile to pnpm, pin versions, establish a green baseline (lint/tsc/test/bundle), build
+  the integration harness skeleton.
 - P1 — v8 tooling side-by-side: install v8 packages, rename v7 config to
   `prisma7.config.ts`, add `prisma.config.ts` (v8), infer/emit the contract, add the `db`
   client, update tsconfig/scripts. Gate: tsc passes; app still runs on v7; no route changed.
@@ -210,8 +214,8 @@ per-route rewrites) may run in parallel where they do not share files.
 - Unverifiable scale: integration tests + incremental commits + per-group gates.
 - Semantic drift (enums, BigInt, raw SQL, transactions): flagged special cases get targeted
   tests.
-- Toolchain ambiguity (native TS 7, three lockfiles): P0 establishes the baseline and
-  confirms which commands the gates use.
+- Toolchain ambiguity (native TS 7, stale npm/bun lockfiles): P0 switches everything to
+  pnpm and confirms which commands the gates use.
 - Live DB safety: all v8 CLI commands run against local podman Postgres only.
 
 ## 14. Rollback
