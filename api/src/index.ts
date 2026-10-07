@@ -29,7 +29,11 @@ export async function buildApp(options: { logger?: boolean | Record<string, unkn
   const defaultCorsOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
   const envOrigins = process.env.CORS_ORIGIN?.split(',').map(s => s.trim()).filter(Boolean) || [];
   const corsOrigins = envOrigins.length > 0 ? envOrigins : defaultCorsOrigins;
-  await app.register(cors, { origin: corsOrigins, credentials: true });
+  await app.register(cors, {
+    origin: corsOrigins,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+    credentials: true
+  });
 
   app.get('/health', async () => ({ status: 'ok' }));
 
