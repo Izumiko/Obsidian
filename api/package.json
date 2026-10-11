@@ -2,12 +2,12 @@
   "name": "api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "npm run lint && tsc",
+    "build": "pnpm run lint && pnpm run typecheck && pnpm run bundle",
+    "typecheck": "tsc --noEmit",
     "bundle": "tsx build.ts",
-    "start": "node dist/index.js",
+    "start": "node build/index.mjs",
     "test": "node --import tsx --test --test-concurrency=1 \"test/**/*.test.ts\"",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
@@ -58,7 +58,6 @@
     "esbuild": "^0.28.2",
     "eslint": "^10.12.0",
     "prisma": "8.0.0-rc.20",
-    "ts-node": "^10.9.2",
     "tsx": "^4.23.15",
     "typescript": "npm:@typescript/typescript6@^6.0.2"
   }
