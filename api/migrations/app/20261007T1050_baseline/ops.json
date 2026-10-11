@@ -1,0 +1,4701 @@
+[
+  {
+    "id": "schema.public",
+    "label": "Create schema \"public\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres"
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "Create schema \"public\"",
+        "sql": "CREATE SCHEMA IF NOT EXISTS \"public\"",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.RegMode",
+    "label": "Create enum type \"RegMode\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "RegMode"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"RegMode\"",
+        "sql": "CREATE TYPE \"public\".\"RegMode\" AS ENUM ('OPEN', 'INVITE', 'CLOSED')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.RequestStatus",
+    "label": "Create enum type \"RequestStatus\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "RequestStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"RequestStatus\"",
+        "sql": "CREATE TYPE \"public\".\"RequestStatus\" AS ENUM ('OPEN', 'FILLED', 'CLOSED', 'REJECTED')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.StorageType",
+    "label": "Create enum type \"StorageType\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "StorageType"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"StorageType\"",
+        "sql": "CREATE TYPE \"public\".\"StorageType\" AS ENUM ('LOCAL', 'S3', 'DB')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.UserRole",
+    "label": "Create enum type \"UserRole\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "UserRole"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"UserRole\"",
+        "sql": "CREATE TYPE \"public\".\"UserRole\" AS ENUM ('USER', 'MOD', 'ADMIN', 'OWNER', 'FOUNDER')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "createNativeEnumType.UserStatus",
+    "label": "Create enum type \"UserStatus\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "type",
+        "name": "UserStatus"
+      }
+    },
+    "precheck": [],
+    "execute": [
+      {
+        "description": "create enum type \"UserStatus\"",
+        "sql": "CREATE TYPE \"public\".\"UserStatus\" AS ENUM ('ACTIVE', 'BANNED', 'DISABLED')",
+        "params": []
+      }
+    ],
+    "postcheck": []
+  },
+  {
+    "id": "table.Announce",
+    "label": "Create table \"Announce\"",
+    "summary": "Creates table \"Announce\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Announce"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Announce\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announce\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Announce\"",
+        "sql": "CREATE TABLE \"public\".\"Announce\" (\n  \"downloaded\" int8 DEFAULT '0'::int8 NOT NULL,\n  \"event\" text,\n  \"id\" text NOT NULL,\n  \"ip\" text NOT NULL,\n  \"lastAnnounceAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"left\" int8 DEFAULT '0'::int8 NOT NULL,\n  \"peerId\" text NOT NULL,\n  \"port\" int4 NOT NULL,\n  \"torrentId\" text NOT NULL,\n  \"uploaded\" int8 DEFAULT '0'::int8 NOT NULL,\n  \"userId\" text,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Announce\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announce\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.AnnounceRateLimit",
+    "label": "Create table \"AnnounceRateLimit\"",
+    "summary": "Creates table \"AnnounceRateLimit\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "AnnounceRateLimit"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"AnnounceRateLimit\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AnnounceRateLimit\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"AnnounceRateLimit\"",
+        "sql": "CREATE TABLE \"public\".\"AnnounceRateLimit\" (\n  \"announceCount\" int4 DEFAULT 0 NOT NULL,\n  \"cooldownUntil\" timestamp(3),\n  \"id\" text NOT NULL,\n  \"lastCheckedAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"reason\" text,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"AnnounceRateLimit\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AnnounceRateLimit\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Announcement",
+    "label": "Create table \"Announcement\"",
+    "summary": "Creates table \"Announcement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Announcement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Announcement\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announcement\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Announcement\"",
+        "sql": "CREATE TABLE \"public\".\"Announcement\" (\n  \"body\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"createdById\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"pinned\" bool DEFAULT false NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"visible\" bool DEFAULT true NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Announcement\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announcement\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Bookmark",
+    "label": "Create table \"Bookmark\"",
+    "summary": "Creates table \"Bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Bookmark\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Bookmark\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Bookmark\"",
+        "sql": "CREATE TABLE \"public\".\"Bookmark\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"note\" text,\n  \"torrentId\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Bookmark\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Bookmark\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Category",
+    "label": "Create table \"Category\"",
+    "summary": "Creates table \"Category\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Category"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Category\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Category\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Category\"",
+        "sql": "CREATE TABLE \"public\".\"Category\" (\n  \"description\" text,\n  \"icon\" text,\n  \"id\" text NOT NULL,\n  \"inheritSources\" bool DEFAULT true NOT NULL,\n  \"name\" text NOT NULL,\n  \"order\" int4,\n  \"parentId\" text,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Category\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Category\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.CategorySource",
+    "label": "Create table \"CategorySource\"",
+    "summary": "Creates table \"CategorySource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "CategorySource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"CategorySource\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"CategorySource\"",
+        "sql": "CREATE TABLE \"public\".\"CategorySource\" (\n  \"categoryId\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"isInherited\" bool DEFAULT false NOT NULL,\n  \"order\" int4 DEFAULT 0 NOT NULL,\n  \"sourceId\" text NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"CategorySource\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Comment",
+    "label": "Create table \"Comment\"",
+    "summary": "Creates table \"Comment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Comment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Comment\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Comment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Comment\"",
+        "sql": "CREATE TABLE \"public\".\"Comment\" (\n  \"content\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"deleted\" bool DEFAULT false NOT NULL,\n  \"id\" text NOT NULL,\n  \"parentId\" text,\n  \"requestId\" text,\n  \"torrentId\" text,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Comment\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Comment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.CommentVote",
+    "label": "Create table \"CommentVote\"",
+    "summary": "Creates table \"CommentVote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "CommentVote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"CommentVote\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CommentVote\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"CommentVote\"",
+        "sql": "CREATE TABLE \"public\".\"CommentVote\" (\n  \"commentId\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  \"value\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"CommentVote\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CommentVote\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Config",
+    "label": "Create table \"Config\"",
+    "summary": "Creates table \"Config\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Config"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Config\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Config\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Config\"",
+        "sql": "CREATE TABLE \"public\".\"Config\" (\n  \"allowedFingerprints\" text[] DEFAULT '{}',\n  \"blacklistedClients\" text[] DEFAULT '{}',\n  \"bonusPointsPerHour\" int4 DEFAULT 1 NOT NULL,\n  \"brandingName\" text,\n  \"defaultAnnounceInterval\" int4 DEFAULT 1800 NOT NULL,\n  \"enableAnnounceRateCheck\" bool DEFAULT true NOT NULL,\n  \"enableCheatingClientCheck\" bool DEFAULT true NOT NULL,\n  \"enableGhostLeechingCheck\" bool DEFAULT true NOT NULL,\n  \"enableInvalidStatsCheck\" bool DEFAULT true NOT NULL,\n  \"enableIpAbuseCheck\" bool DEFAULT true NOT NULL,\n  \"enablePeerBanCheck\" bool DEFAULT true NOT NULL,\n  \"hitAndRunThreshold\" int4 DEFAULT 5 NOT NULL,\n  \"id\" int4 DEFAULT 1 NOT NULL,\n  \"inviteExpiryHours\" int4 DEFAULT 6 NOT NULL,\n  \"maxInvitesPerUser\" int4 DEFAULT 5 NOT NULL,\n  \"maxStatsJumpMultiplier\" int4 DEFAULT 10 NOT NULL,\n  \"minAnnounceInterval\" int4 DEFAULT 300 NOT NULL,\n  \"minRatio\" float8 DEFAULT 0.5 NOT NULL,\n  \"ranksEnabled\" bool DEFAULT true NOT NULL,\n  \"registrationMode\" \"RegMode\" DEFAULT 'OPEN'::\"RegMode\" NOT NULL,\n  \"requireTorrentApproval\" bool DEFAULT false NOT NULL,\n  \"requiredSeedingMinutes\" int4 DEFAULT 4320 NOT NULL,\n  \"rssDefaultCount\" int4 DEFAULT 20 NOT NULL,\n  \"s3AccessKeyId\" text,\n  \"s3Bucket\" text,\n  \"s3Region\" text,\n  \"s3SecretAccessKey\" text,\n  \"showHomePageStats\" bool DEFAULT true NOT NULL,\n  \"smtpFrom\" text,\n  \"smtpHost\" text,\n  \"smtpPass\" text,\n  \"smtpPort\" int4,\n  \"smtpUser\" text,\n  \"storageType\" \"StorageType\" DEFAULT 'DB'::\"StorageType\" NOT NULL,\n  \"whitelistedClients\" text[] DEFAULT '{}',\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Config\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Config\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.DownloadToken",
+    "label": "Create table \"DownloadToken\"",
+    "summary": "Creates table \"DownloadToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "DownloadToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"DownloadToken\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DownloadToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"DownloadToken\"",
+        "sql": "CREATE TABLE \"public\".\"DownloadToken\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamp(3) NOT NULL,\n  \"id\" text NOT NULL,\n  \"token\" text NOT NULL,\n  \"torrentId\" text NOT NULL,\n  \"used\" bool DEFAULT false NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"DownloadToken\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DownloadToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.EmailVerificationToken",
+    "label": "Create table \"EmailVerificationToken\"",
+    "summary": "Creates table \"EmailVerificationToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"EmailVerificationToken\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"EmailVerificationToken\"",
+        "sql": "CREATE TABLE \"public\".\"EmailVerificationToken\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamp(3) NOT NULL,\n  \"id\" text NOT NULL,\n  \"token\" text NOT NULL,\n  \"used\" bool DEFAULT false NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"EmailVerificationToken\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.HitAndRun",
+    "label": "Create table \"HitAndRun\"",
+    "summary": "Creates table \"HitAndRun\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "HitAndRun"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"HitAndRun\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"HitAndRun\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"HitAndRun\"",
+        "sql": "CREATE TABLE \"public\".\"HitAndRun\" (\n  \"downloadedAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"isHitAndRun\" bool DEFAULT false NOT NULL,\n  \"lastSeededAt\" timestamp(3),\n  \"torrentId\" text NOT NULL,\n  \"totalSeedingTime\" int4 DEFAULT 0 NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"HitAndRun\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"HitAndRun\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Invite",
+    "label": "Create table \"Invite\"",
+    "summary": "Creates table \"Invite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Invite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Invite\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Invite\"",
+        "sql": "CREATE TABLE \"public\".\"Invite\" (\n  \"code\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"createdById\" text NOT NULL,\n  \"expiresAt\" timestamp(3),\n  \"id\" text NOT NULL,\n  \"usedAt\" timestamp(3),\n  \"usedById\" text,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Invite\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invite\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Notification",
+    "label": "Create table \"Notification\"",
+    "summary": "Creates table \"Notification\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Notification"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Notification\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Notification\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Notification\"",
+        "sql": "CREATE TABLE \"public\".\"Notification\" (\n  \"adminId\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"message\" text NOT NULL,\n  \"read\" bool DEFAULT false NOT NULL,\n  \"relatedBanId\" text,\n  \"type\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Notification\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Notification\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.PasswordResetToken",
+    "label": "Create table \"PasswordResetToken\"",
+    "summary": "Creates table \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"PasswordResetToken\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"PasswordResetToken\"",
+        "sql": "CREATE TABLE \"public\".\"PasswordResetToken\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamp(3) NOT NULL,\n  \"id\" text NOT NULL,\n  \"token\" text NOT NULL,\n  \"used\" bool DEFAULT false NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"PasswordResetToken\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.PeerBan",
+    "label": "Create table \"PeerBan\"",
+    "summary": "Creates table \"PeerBan\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "PeerBan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"PeerBan\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"PeerBan\"",
+        "sql": "CREATE TABLE \"public\".\"PeerBan\" (\n  \"bannedById\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"expiresAt\" timestamp(3),\n  \"id\" text NOT NULL,\n  \"ip\" text,\n  \"passkey\" text,\n  \"peerId\" text,\n  \"reason\" text NOT NULL,\n  \"userId\" text,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"PeerBan\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Rank",
+    "label": "Create table \"Rank\"",
+    "summary": "Creates table \"Rank\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Rank"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Rank\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Rank\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Rank\"",
+        "sql": "CREATE TABLE \"public\".\"Rank\" (\n  \"color\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"id\" text NOT NULL,\n  \"minDownload\" int8 DEFAULT '0'::int8 NOT NULL,\n  \"minRatio\" float8 DEFAULT 0 NOT NULL,\n  \"minUpload\" int8 DEFAULT '0'::int8 NOT NULL,\n  \"name\" text NOT NULL,\n  \"order\" int4 NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Rank\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Rank\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Request",
+    "label": "Create table \"Request\"",
+    "summary": "Creates table \"Request\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Request"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Request\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Request\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Request\"",
+        "sql": "CREATE TABLE \"public\".\"Request\" (\n  \"categoryId\" text,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"filledById\" text,\n  \"filledTorrentId\" text,\n  \"id\" text NOT NULL,\n  \"status\" \"RequestStatus\" DEFAULT 'OPEN'::\"RequestStatus\" NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Request\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Request\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Source",
+    "label": "Create table \"Source\"",
+    "summary": "Creates table \"Source\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Source"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Source\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Source\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Source\"",
+        "sql": "CREATE TABLE \"public\".\"Source\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"isActive\" bool DEFAULT true NOT NULL,\n  \"name\" text NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Source\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Source\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.Torrent",
+    "label": "Create table \"Torrent\"",
+    "summary": "Creates table \"Torrent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "Torrent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"Torrent\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"Torrent\"",
+        "sql": "CREATE TABLE \"public\".\"Torrent\" (\n  \"categoryId\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"description\" text,\n  \"filePath\" text NOT NULL,\n  \"freeleech\" bool DEFAULT false NOT NULL,\n  \"id\" text NOT NULL,\n  \"infoHash\" text NOT NULL,\n  \"isAnonymous\" bool DEFAULT false NOT NULL,\n  \"isApproved\" bool DEFAULT false NOT NULL,\n  \"isRejected\" bool DEFAULT false NOT NULL,\n  \"name\" text NOT NULL,\n  \"nfoPath\" text,\n  \"posterFileId\" text,\n  \"posterUrl\" text,\n  \"rejectedAt\" timestamp(3),\n  \"rejectedById\" text,\n  \"rejectionReason\" text,\n  \"size\" int8 NOT NULL,\n  \"tags\" text[] DEFAULT '{}',\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"uploaderId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"Torrent\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.TorrentVote",
+    "label": "Create table \"TorrentVote\"",
+    "summary": "Creates table \"TorrentVote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "TorrentVote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"TorrentVote\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TorrentVote\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"TorrentVote\"",
+        "sql": "CREATE TABLE \"public\".\"TorrentVote\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"id\" text NOT NULL,\n  \"torrentId\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  \"value\" int4 NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"TorrentVote\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TorrentVote\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.UploadedFile",
+    "label": "Create table \"UploadedFile\"",
+    "summary": "Creates table \"UploadedFile\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "UploadedFile"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"UploadedFile\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UploadedFile\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"UploadedFile\"",
+        "sql": "CREATE TABLE \"public\".\"UploadedFile\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"data\" bytea,\n  \"ext\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"mimeType\" text NOT NULL,\n  \"size\" int4 NOT NULL,\n  \"storageKey\" text NOT NULL,\n  \"type\" text NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"UploadedFile\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UploadedFile\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.User",
+    "label": "Create table \"User\"",
+    "summary": "Creates table \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"User\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"User\"",
+        "sql": "CREATE TABLE \"public\".\"User\" (\n  \"allowEmailNotifications\" bool DEFAULT true NOT NULL,\n  \"avatarFileId\" text,\n  \"avatarUrl\" text,\n  \"bonusPoints\" int4 DEFAULT 0 NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"download\" int8 DEFAULT '0'::int8 NOT NULL,\n  \"email\" text NOT NULL,\n  \"emailVerified\" bool DEFAULT false NOT NULL,\n  \"id\" text NOT NULL,\n  \"inviteCode\" text,\n  \"passkey\" text NOT NULL,\n  \"passwordHash\" text NOT NULL,\n  \"preferredLanguage\" text,\n  \"publicProfile\" bool DEFAULT false NOT NULL,\n  \"role\" \"UserRole\" DEFAULT 'USER'::\"UserRole\" NOT NULL,\n  \"rssEnabled\" bool DEFAULT true NOT NULL,\n  \"rssToken\" text,\n  \"status\" \"UserStatus\" DEFAULT 'ACTIVE'::\"UserStatus\" NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"upload\" int8 DEFAULT '0'::int8 NOT NULL,\n  \"username\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"User\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.UserActivity",
+    "label": "Create table \"UserActivity\"",
+    "summary": "Creates table \"UserActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "UserActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"UserActivity\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserActivity\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"UserActivity\"",
+        "sql": "CREATE TABLE \"public\".\"UserActivity\" (\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"entityId\" text,\n  \"entityType\" text,\n  \"id\" text NOT NULL,\n  \"metadata\" jsonb,\n  \"subtitle\" text,\n  \"title\" text NOT NULL,\n  \"type\" text NOT NULL,\n  \"userId\" text NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"UserActivity\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserActivity\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table.WikiPage",
+    "label": "Create table \"WikiPage\"",
+    "summary": "Creates table \"WikiPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "table",
+        "name": "WikiPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure table \"WikiPage\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create table \"WikiPage\"",
+        "sql": "CREATE TABLE \"public\".\"WikiPage\" (\n  \"content\" text NOT NULL,\n  \"createdAt\" timestamp(3) DEFAULT (now()) NOT NULL,\n  \"createdById\" text NOT NULL,\n  \"id\" text NOT NULL,\n  \"locked\" bool DEFAULT false NOT NULL,\n  \"parentId\" text,\n  \"slug\" text NOT NULL,\n  \"title\" text NOT NULL,\n  \"updatedAt\" timestamp(3) NOT NULL,\n  \"updatedById\" text NOT NULL,\n  \"visible\" bool DEFAULT true NOT NULL,\n  PRIMARY KEY (\"id\")\n)",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify table \"WikiPage\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Announce.Announce_torrentId_peerId_key",
+    "label": "Create index \"Announce_torrentId_peerId_key\" on \"Announce\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Announce_torrentId_peerId_key",
+        "table": "Announce"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Announce_torrentId_peerId_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announce_torrentId_peerId_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Announce_torrentId_peerId_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Announce_torrentId_peerId_key\" ON \"public\".\"Announce\" (\"torrentId\", \"peerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Announce_torrentId_peerId_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announce_torrentId_peerId_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.AnnounceRateLimit.AnnounceRateLimit_userId_idx",
+    "label": "Create index \"AnnounceRateLimit_userId_idx\" on \"AnnounceRateLimit\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "AnnounceRateLimit_userId_idx",
+        "table": "AnnounceRateLimit"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"AnnounceRateLimit_userId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AnnounceRateLimit_userId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"AnnounceRateLimit_userId_idx\"",
+        "sql": "CREATE INDEX \"AnnounceRateLimit_userId_idx\" ON \"public\".\"AnnounceRateLimit\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"AnnounceRateLimit_userId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"AnnounceRateLimit_userId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Announcement.Announcement_pinned_idx",
+    "label": "Create index \"Announcement_pinned_idx\" on \"Announcement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Announcement_pinned_idx",
+        "table": "Announcement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Announcement_pinned_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announcement_pinned_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Announcement_pinned_idx\"",
+        "sql": "CREATE INDEX \"Announcement_pinned_idx\" ON \"public\".\"Announcement\" (\"pinned\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Announcement_pinned_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announcement_pinned_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Announcement.Announcement_visible_idx",
+    "label": "Create index \"Announcement_visible_idx\" on \"Announcement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Announcement_visible_idx",
+        "table": "Announcement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Announcement_visible_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announcement_visible_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Announcement_visible_idx\"",
+        "sql": "CREATE INDEX \"Announcement_visible_idx\" ON \"public\".\"Announcement\" (\"visible\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Announcement_visible_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Announcement_visible_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Bookmark.Bookmark_userId_torrentId_key",
+    "label": "Create index \"Bookmark_userId_torrentId_key\" on \"Bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Bookmark_userId_torrentId_key",
+        "table": "Bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Bookmark_userId_torrentId_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Bookmark_userId_torrentId_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Bookmark_userId_torrentId_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Bookmark_userId_torrentId_key\" ON \"public\".\"Bookmark\" (\"userId\", \"torrentId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Bookmark_userId_torrentId_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Bookmark_userId_torrentId_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Category.Category_name_key",
+    "label": "Create index \"Category_name_key\" on \"Category\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Category_name_key",
+        "table": "Category"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Category_name_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Category_name_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Category_name_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Category_name_key\" ON \"public\".\"Category\" (\"name\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Category_name_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Category_name_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.CategorySource.CategorySource_categoryId_idx",
+    "label": "Create index \"CategorySource_categoryId_idx\" on \"CategorySource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "CategorySource_categoryId_idx",
+        "table": "CategorySource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"CategorySource_categoryId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource_categoryId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"CategorySource_categoryId_idx\"",
+        "sql": "CREATE INDEX \"CategorySource_categoryId_idx\" ON \"public\".\"CategorySource\" (\"categoryId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"CategorySource_categoryId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource_categoryId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.CategorySource.CategorySource_categoryId_order_idx",
+    "label": "Create index \"CategorySource_categoryId_order_idx\" on \"CategorySource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "CategorySource_categoryId_order_idx",
+        "table": "CategorySource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"CategorySource_categoryId_order_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource_categoryId_order_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"CategorySource_categoryId_order_idx\"",
+        "sql": "CREATE INDEX \"CategorySource_categoryId_order_idx\" ON \"public\".\"CategorySource\" (\"categoryId\", \"order\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"CategorySource_categoryId_order_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource_categoryId_order_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.CategorySource.CategorySource_categoryId_sourceId_key",
+    "label": "Create index \"CategorySource_categoryId_sourceId_key\" on \"CategorySource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "CategorySource_categoryId_sourceId_key",
+        "table": "CategorySource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"CategorySource_categoryId_sourceId_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource_categoryId_sourceId_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"CategorySource_categoryId_sourceId_key\"",
+        "sql": "CREATE UNIQUE INDEX \"CategorySource_categoryId_sourceId_key\" ON \"public\".\"CategorySource\" (\"categoryId\", \"sourceId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"CategorySource_categoryId_sourceId_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource_categoryId_sourceId_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.CategorySource.CategorySource_sourceId_idx",
+    "label": "Create index \"CategorySource_sourceId_idx\" on \"CategorySource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "CategorySource_sourceId_idx",
+        "table": "CategorySource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"CategorySource_sourceId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource_sourceId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"CategorySource_sourceId_idx\"",
+        "sql": "CREATE INDEX \"CategorySource_sourceId_idx\" ON \"public\".\"CategorySource\" (\"sourceId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"CategorySource_sourceId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CategorySource_sourceId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.CommentVote.CommentVote_userId_commentId_key",
+    "label": "Create index \"CommentVote_userId_commentId_key\" on \"CommentVote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "CommentVote_userId_commentId_key",
+        "table": "CommentVote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"CommentVote_userId_commentId_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CommentVote_userId_commentId_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"CommentVote_userId_commentId_key\"",
+        "sql": "CREATE UNIQUE INDEX \"CommentVote_userId_commentId_key\" ON \"public\".\"CommentVote\" (\"userId\", \"commentId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"CommentVote_userId_commentId_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"CommentVote_userId_commentId_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.DownloadToken.DownloadToken_expiresAt_idx",
+    "label": "Create index \"DownloadToken_expiresAt_idx\" on \"DownloadToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "DownloadToken_expiresAt_idx",
+        "table": "DownloadToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"DownloadToken_expiresAt_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DownloadToken_expiresAt_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"DownloadToken_expiresAt_idx\"",
+        "sql": "CREATE INDEX \"DownloadToken_expiresAt_idx\" ON \"public\".\"DownloadToken\" (\"expiresAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"DownloadToken_expiresAt_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DownloadToken_expiresAt_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.DownloadToken.DownloadToken_token_idx",
+    "label": "Create index \"DownloadToken_token_idx\" on \"DownloadToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "DownloadToken_token_idx",
+        "table": "DownloadToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"DownloadToken_token_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DownloadToken_token_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"DownloadToken_token_idx\"",
+        "sql": "CREATE INDEX \"DownloadToken_token_idx\" ON \"public\".\"DownloadToken\" (\"token\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"DownloadToken_token_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DownloadToken_token_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.DownloadToken.DownloadToken_token_key",
+    "label": "Create index \"DownloadToken_token_key\" on \"DownloadToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "DownloadToken_token_key",
+        "table": "DownloadToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"DownloadToken_token_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DownloadToken_token_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"DownloadToken_token_key\"",
+        "sql": "CREATE UNIQUE INDEX \"DownloadToken_token_key\" ON \"public\".\"DownloadToken\" (\"token\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"DownloadToken_token_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"DownloadToken_token_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.EmailVerificationToken.EmailVerificationToken_token_idx",
+    "label": "Create index \"EmailVerificationToken_token_idx\" on \"EmailVerificationToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "EmailVerificationToken_token_idx",
+        "table": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"EmailVerificationToken_token_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken_token_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"EmailVerificationToken_token_idx\"",
+        "sql": "CREATE INDEX \"EmailVerificationToken_token_idx\" ON \"public\".\"EmailVerificationToken\" (\"token\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"EmailVerificationToken_token_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken_token_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.EmailVerificationToken.EmailVerificationToken_token_key",
+    "label": "Create index \"EmailVerificationToken_token_key\" on \"EmailVerificationToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "EmailVerificationToken_token_key",
+        "table": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"EmailVerificationToken_token_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken_token_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"EmailVerificationToken_token_key\"",
+        "sql": "CREATE UNIQUE INDEX \"EmailVerificationToken_token_key\" ON \"public\".\"EmailVerificationToken\" (\"token\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"EmailVerificationToken_token_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken_token_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.EmailVerificationToken.EmailVerificationToken_userId_idx",
+    "label": "Create index \"EmailVerificationToken_userId_idx\" on \"EmailVerificationToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "EmailVerificationToken_userId_idx",
+        "table": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"EmailVerificationToken_userId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken_userId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"EmailVerificationToken_userId_idx\"",
+        "sql": "CREATE INDEX \"EmailVerificationToken_userId_idx\" ON \"public\".\"EmailVerificationToken\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"EmailVerificationToken_userId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"EmailVerificationToken_userId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Invite.Invite_code_key",
+    "label": "Create index \"Invite_code_key\" on \"Invite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Invite_code_key",
+        "table": "Invite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Invite_code_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invite_code_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Invite_code_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Invite_code_key\" ON \"public\".\"Invite\" (\"code\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Invite_code_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Invite_code_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Notification.Notification_read_idx",
+    "label": "Create index \"Notification_read_idx\" on \"Notification\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Notification_read_idx",
+        "table": "Notification"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Notification_read_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Notification_read_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Notification_read_idx\"",
+        "sql": "CREATE INDEX \"Notification_read_idx\" ON \"public\".\"Notification\" (\"read\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Notification_read_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Notification_read_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Notification.Notification_userId_idx",
+    "label": "Create index \"Notification_userId_idx\" on \"Notification\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Notification_userId_idx",
+        "table": "Notification"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Notification_userId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Notification_userId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Notification_userId_idx\"",
+        "sql": "CREATE INDEX \"Notification_userId_idx\" ON \"public\".\"Notification\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Notification_userId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Notification_userId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PasswordResetToken.PasswordResetToken_token_idx",
+    "label": "Create index \"PasswordResetToken_token_idx\" on \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PasswordResetToken_token_idx",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PasswordResetToken_token_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_token_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PasswordResetToken_token_idx\"",
+        "sql": "CREATE INDEX \"PasswordResetToken_token_idx\" ON \"public\".\"PasswordResetToken\" (\"token\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PasswordResetToken_token_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_token_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PasswordResetToken.PasswordResetToken_token_key",
+    "label": "Create index \"PasswordResetToken_token_key\" on \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PasswordResetToken_token_key",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PasswordResetToken_token_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_token_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PasswordResetToken_token_key\"",
+        "sql": "CREATE UNIQUE INDEX \"PasswordResetToken_token_key\" ON \"public\".\"PasswordResetToken\" (\"token\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PasswordResetToken_token_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_token_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PasswordResetToken.PasswordResetToken_userId_idx",
+    "label": "Create index \"PasswordResetToken_userId_idx\" on \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PasswordResetToken_userId_idx",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PasswordResetToken_userId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_userId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PasswordResetToken_userId_idx\"",
+        "sql": "CREATE INDEX \"PasswordResetToken_userId_idx\" ON \"public\".\"PasswordResetToken\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PasswordResetToken_userId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PasswordResetToken_userId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PeerBan.PeerBan_bannedById_idx",
+    "label": "Create index \"PeerBan_bannedById_idx\" on \"PeerBan\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PeerBan_bannedById_idx",
+        "table": "PeerBan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PeerBan_bannedById_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_bannedById_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PeerBan_bannedById_idx\"",
+        "sql": "CREATE INDEX \"PeerBan_bannedById_idx\" ON \"public\".\"PeerBan\" (\"bannedById\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PeerBan_bannedById_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_bannedById_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PeerBan.PeerBan_ip_idx",
+    "label": "Create index \"PeerBan_ip_idx\" on \"PeerBan\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PeerBan_ip_idx",
+        "table": "PeerBan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PeerBan_ip_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_ip_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PeerBan_ip_idx\"",
+        "sql": "CREATE INDEX \"PeerBan_ip_idx\" ON \"public\".\"PeerBan\" (\"ip\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PeerBan_ip_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_ip_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PeerBan.PeerBan_passkey_idx",
+    "label": "Create index \"PeerBan_passkey_idx\" on \"PeerBan\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PeerBan_passkey_idx",
+        "table": "PeerBan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PeerBan_passkey_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_passkey_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PeerBan_passkey_idx\"",
+        "sql": "CREATE INDEX \"PeerBan_passkey_idx\" ON \"public\".\"PeerBan\" (\"passkey\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PeerBan_passkey_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_passkey_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PeerBan.PeerBan_peerId_idx",
+    "label": "Create index \"PeerBan_peerId_idx\" on \"PeerBan\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PeerBan_peerId_idx",
+        "table": "PeerBan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PeerBan_peerId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_peerId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PeerBan_peerId_idx\"",
+        "sql": "CREATE INDEX \"PeerBan_peerId_idx\" ON \"public\".\"PeerBan\" (\"peerId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PeerBan_peerId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_peerId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.PeerBan.PeerBan_userId_idx",
+    "label": "Create index \"PeerBan_userId_idx\" on \"PeerBan\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "PeerBan_userId_idx",
+        "table": "PeerBan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"PeerBan_userId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_userId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"PeerBan_userId_idx\"",
+        "sql": "CREATE INDEX \"PeerBan_userId_idx\" ON \"public\".\"PeerBan\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"PeerBan_userId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"PeerBan_userId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Rank.Rank_name_key",
+    "label": "Create index \"Rank_name_key\" on \"Rank\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Rank_name_key",
+        "table": "Rank"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Rank_name_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Rank_name_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Rank_name_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Rank_name_key\" ON \"public\".\"Rank\" (\"name\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Rank_name_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Rank_name_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Rank.Rank_order_key",
+    "label": "Create index \"Rank_order_key\" on \"Rank\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Rank_order_key",
+        "table": "Rank"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Rank_order_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Rank_order_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Rank_order_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Rank_order_key\" ON \"public\".\"Rank\" (\"order\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Rank_order_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Rank_order_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Source.Source_name_key",
+    "label": "Create index \"Source_name_key\" on \"Source\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Source_name_key",
+        "table": "Source"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Source_name_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Source_name_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Source_name_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Source_name_key\" ON \"public\".\"Source\" (\"name\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Source_name_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Source_name_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Torrent.Torrent_infoHash_key",
+    "label": "Create index \"Torrent_infoHash_key\" on \"Torrent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Torrent_infoHash_key",
+        "table": "Torrent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Torrent_infoHash_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Torrent_infoHash_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Torrent_infoHash_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Torrent_infoHash_key\" ON \"public\".\"Torrent\" (\"infoHash\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Torrent_infoHash_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Torrent_infoHash_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.Torrent.Torrent_posterFileId_key",
+    "label": "Create index \"Torrent_posterFileId_key\" on \"Torrent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "Torrent_posterFileId_key",
+        "table": "Torrent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"Torrent_posterFileId_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Torrent_posterFileId_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"Torrent_posterFileId_key\"",
+        "sql": "CREATE UNIQUE INDEX \"Torrent_posterFileId_key\" ON \"public\".\"Torrent\" (\"posterFileId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"Torrent_posterFileId_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"Torrent_posterFileId_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.TorrentVote.TorrentVote_userId_torrentId_key",
+    "label": "Create index \"TorrentVote_userId_torrentId_key\" on \"TorrentVote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "TorrentVote_userId_torrentId_key",
+        "table": "TorrentVote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"TorrentVote_userId_torrentId_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TorrentVote_userId_torrentId_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"TorrentVote_userId_torrentId_key\"",
+        "sql": "CREATE UNIQUE INDEX \"TorrentVote_userId_torrentId_key\" ON \"public\".\"TorrentVote\" (\"userId\", \"torrentId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"TorrentVote_userId_torrentId_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"TorrentVote_userId_torrentId_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.User.User_avatarFileId_key",
+    "label": "Create index \"User_avatarFileId_key\" on \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "User_avatarFileId_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"User_avatarFileId_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_avatarFileId_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"User_avatarFileId_key\"",
+        "sql": "CREATE UNIQUE INDEX \"User_avatarFileId_key\" ON \"public\".\"User\" (\"avatarFileId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"User_avatarFileId_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_avatarFileId_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.User.User_email_key",
+    "label": "Create index \"User_email_key\" on \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "User_email_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"User_email_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_email_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"User_email_key\"",
+        "sql": "CREATE UNIQUE INDEX \"User_email_key\" ON \"public\".\"User\" (\"email\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"User_email_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_email_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.User.User_passkey_key",
+    "label": "Create index \"User_passkey_key\" on \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "User_passkey_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"User_passkey_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_passkey_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"User_passkey_key\"",
+        "sql": "CREATE UNIQUE INDEX \"User_passkey_key\" ON \"public\".\"User\" (\"passkey\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"User_passkey_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_passkey_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.User.User_rssToken_idx",
+    "label": "Create index \"User_rssToken_idx\" on \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "User_rssToken_idx",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"User_rssToken_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_rssToken_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"User_rssToken_idx\"",
+        "sql": "CREATE INDEX \"User_rssToken_idx\" ON \"public\".\"User\" (\"rssToken\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"User_rssToken_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_rssToken_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.User.User_rssToken_key",
+    "label": "Create index \"User_rssToken_key\" on \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "User_rssToken_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"User_rssToken_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_rssToken_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"User_rssToken_key\"",
+        "sql": "CREATE UNIQUE INDEX \"User_rssToken_key\" ON \"public\".\"User\" (\"rssToken\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"User_rssToken_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_rssToken_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.User.User_username_key",
+    "label": "Create index \"User_username_key\" on \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "User_username_key",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"User_username_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_username_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"User_username_key\"",
+        "sql": "CREATE UNIQUE INDEX \"User_username_key\" ON \"public\".\"User\" (\"username\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"User_username_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"User_username_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserActivity.UserActivity_type_idx",
+    "label": "Create index \"UserActivity_type_idx\" on \"UserActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserActivity_type_idx",
+        "table": "UserActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserActivity_type_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserActivity_type_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserActivity_type_idx\"",
+        "sql": "CREATE INDEX \"UserActivity_type_idx\" ON \"public\".\"UserActivity\" (\"type\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserActivity_type_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserActivity_type_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserActivity.UserActivity_userId_createdAt_idx",
+    "label": "Create index \"UserActivity_userId_createdAt_idx\" on \"UserActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserActivity_userId_createdAt_idx",
+        "table": "UserActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserActivity_userId_createdAt_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserActivity_userId_createdAt_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserActivity_userId_createdAt_idx\"",
+        "sql": "CREATE INDEX \"UserActivity_userId_createdAt_idx\" ON \"public\".\"UserActivity\" (\"userId\", \"createdAt\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserActivity_userId_createdAt_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserActivity_userId_createdAt_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.UserActivity.UserActivity_userId_idx",
+    "label": "Create index \"UserActivity_userId_idx\" on \"UserActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "UserActivity_userId_idx",
+        "table": "UserActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"UserActivity_userId_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserActivity_userId_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"UserActivity_userId_idx\"",
+        "sql": "CREATE INDEX \"UserActivity_userId_idx\" ON \"public\".\"UserActivity\" (\"userId\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"UserActivity_userId_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"UserActivity_userId_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.WikiPage.WikiPage_locked_idx",
+    "label": "Create index \"WikiPage_locked_idx\" on \"WikiPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "WikiPage_locked_idx",
+        "table": "WikiPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"WikiPage_locked_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage_locked_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"WikiPage_locked_idx\"",
+        "sql": "CREATE INDEX \"WikiPage_locked_idx\" ON \"public\".\"WikiPage\" (\"locked\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"WikiPage_locked_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage_locked_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.WikiPage.WikiPage_slug_idx",
+    "label": "Create index \"WikiPage_slug_idx\" on \"WikiPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "WikiPage_slug_idx",
+        "table": "WikiPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"WikiPage_slug_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage_slug_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"WikiPage_slug_idx\"",
+        "sql": "CREATE INDEX \"WikiPage_slug_idx\" ON \"public\".\"WikiPage\" (\"slug\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"WikiPage_slug_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage_slug_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.WikiPage.WikiPage_slug_key",
+    "label": "Create index \"WikiPage_slug_key\" on \"WikiPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "WikiPage_slug_key",
+        "table": "WikiPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"WikiPage_slug_key\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage_slug_key\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"WikiPage_slug_key\"",
+        "sql": "CREATE UNIQUE INDEX \"WikiPage_slug_key\" ON \"public\".\"WikiPage\" (\"slug\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"WikiPage_slug_key\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage_slug_key\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "index.WikiPage.WikiPage_visible_idx",
+    "label": "Create index \"WikiPage_visible_idx\" on \"WikiPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "index",
+        "name": "WikiPage_visible_idx",
+        "table": "WikiPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure index \"WikiPage_visible_idx\" does not exist",
+        "sql": "SELECT (to_regclass($1)) IS NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage_visible_idx\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "create index \"WikiPage_visible_idx\"",
+        "sql": "CREATE INDEX \"WikiPage_visible_idx\" ON \"public\".\"WikiPage\" (\"visible\")",
+        "params": []
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify index \"WikiPage_visible_idx\" exists",
+        "sql": "SELECT (to_regclass($1)) IS NOT NULL AS \"result\"",
+        "params": [
+          "\"public\".\"WikiPage_visible_idx\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Announce.Announce_torrentId_fkey",
+    "label": "Add foreign key \"Announce_torrentId_fkey\" on \"Announce\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Announce_torrentId_fkey",
+        "table": "Announce"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Announce_torrentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Announce_torrentId_fkey",
+          "public",
+          "\"public\".\"Announce\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Announce_torrentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Announce\"\nADD CONSTRAINT \"Announce_torrentId_fkey\"\nFOREIGN KEY (\"torrentId\")\nREFERENCES \"public\".\"Torrent\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Announce_torrentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Announce_torrentId_fkey",
+          "public",
+          "\"public\".\"Announce\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Announce.Announce_userId_fkey",
+    "label": "Add foreign key \"Announce_userId_fkey\" on \"Announce\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Announce_userId_fkey",
+        "table": "Announce"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Announce_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Announce_userId_fkey",
+          "public",
+          "\"public\".\"Announce\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Announce_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Announce\"\nADD CONSTRAINT \"Announce_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Announce_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Announce_userId_fkey",
+          "public",
+          "\"public\".\"Announce\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.AnnounceRateLimit.AnnounceRateLimit_userId_fkey",
+    "label": "Add foreign key \"AnnounceRateLimit_userId_fkey\" on \"AnnounceRateLimit\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "AnnounceRateLimit_userId_fkey",
+        "table": "AnnounceRateLimit"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"AnnounceRateLimit_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AnnounceRateLimit_userId_fkey",
+          "public",
+          "\"public\".\"AnnounceRateLimit\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"AnnounceRateLimit_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"AnnounceRateLimit\"\nADD CONSTRAINT \"AnnounceRateLimit_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"AnnounceRateLimit_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "AnnounceRateLimit_userId_fkey",
+          "public",
+          "\"public\".\"AnnounceRateLimit\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Announcement.Announcement_createdById_fkey",
+    "label": "Add foreign key \"Announcement_createdById_fkey\" on \"Announcement\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Announcement_createdById_fkey",
+        "table": "Announcement"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Announcement_createdById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Announcement_createdById_fkey",
+          "public",
+          "\"public\".\"Announcement\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Announcement_createdById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Announcement\"\nADD CONSTRAINT \"Announcement_createdById_fkey\"\nFOREIGN KEY (\"createdById\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Announcement_createdById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Announcement_createdById_fkey",
+          "public",
+          "\"public\".\"Announcement\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Bookmark.Bookmark_userId_fkey",
+    "label": "Add foreign key \"Bookmark_userId_fkey\" on \"Bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Bookmark_userId_fkey",
+        "table": "Bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Bookmark_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Bookmark_userId_fkey",
+          "public",
+          "\"public\".\"Bookmark\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Bookmark_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Bookmark\"\nADD CONSTRAINT \"Bookmark_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Bookmark_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Bookmark_userId_fkey",
+          "public",
+          "\"public\".\"Bookmark\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Bookmark.Bookmark_torrentId_fkey",
+    "label": "Add foreign key \"Bookmark_torrentId_fkey\" on \"Bookmark\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Bookmark_torrentId_fkey",
+        "table": "Bookmark"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Bookmark_torrentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Bookmark_torrentId_fkey",
+          "public",
+          "\"public\".\"Bookmark\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Bookmark_torrentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Bookmark\"\nADD CONSTRAINT \"Bookmark_torrentId_fkey\"\nFOREIGN KEY (\"torrentId\")\nREFERENCES \"public\".\"Torrent\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Bookmark_torrentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Bookmark_torrentId_fkey",
+          "public",
+          "\"public\".\"Bookmark\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Category.Category_parentId_fkey",
+    "label": "Add foreign key \"Category_parentId_fkey\" on \"Category\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Category_parentId_fkey",
+        "table": "Category"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Category_parentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Category_parentId_fkey",
+          "public",
+          "\"public\".\"Category\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Category_parentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Category\"\nADD CONSTRAINT \"Category_parentId_fkey\"\nFOREIGN KEY (\"parentId\")\nREFERENCES \"public\".\"Category\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Category_parentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Category_parentId_fkey",
+          "public",
+          "\"public\".\"Category\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.CategorySource.CategorySource_categoryId_fkey",
+    "label": "Add foreign key \"CategorySource_categoryId_fkey\" on \"CategorySource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "CategorySource_categoryId_fkey",
+        "table": "CategorySource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"CategorySource_categoryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CategorySource_categoryId_fkey",
+          "public",
+          "\"public\".\"CategorySource\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"CategorySource_categoryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"CategorySource\"\nADD CONSTRAINT \"CategorySource_categoryId_fkey\"\nFOREIGN KEY (\"categoryId\")\nREFERENCES \"public\".\"Category\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"CategorySource_categoryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CategorySource_categoryId_fkey",
+          "public",
+          "\"public\".\"CategorySource\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.CategorySource.CategorySource_sourceId_fkey",
+    "label": "Add foreign key \"CategorySource_sourceId_fkey\" on \"CategorySource\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "CategorySource_sourceId_fkey",
+        "table": "CategorySource"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"CategorySource_sourceId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CategorySource_sourceId_fkey",
+          "public",
+          "\"public\".\"CategorySource\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"CategorySource_sourceId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"CategorySource\"\nADD CONSTRAINT \"CategorySource_sourceId_fkey\"\nFOREIGN KEY (\"sourceId\")\nREFERENCES \"public\".\"Source\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"CategorySource_sourceId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CategorySource_sourceId_fkey",
+          "public",
+          "\"public\".\"CategorySource\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Comment.Comment_parentId_fkey",
+    "label": "Add foreign key \"Comment_parentId_fkey\" on \"Comment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Comment_parentId_fkey",
+        "table": "Comment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Comment_parentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Comment_parentId_fkey",
+          "public",
+          "\"public\".\"Comment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Comment_parentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Comment\"\nADD CONSTRAINT \"Comment_parentId_fkey\"\nFOREIGN KEY (\"parentId\")\nREFERENCES \"public\".\"Comment\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Comment_parentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Comment_parentId_fkey",
+          "public",
+          "\"public\".\"Comment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Comment.Comment_torrentId_fkey",
+    "label": "Add foreign key \"Comment_torrentId_fkey\" on \"Comment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Comment_torrentId_fkey",
+        "table": "Comment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Comment_torrentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Comment_torrentId_fkey",
+          "public",
+          "\"public\".\"Comment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Comment_torrentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Comment\"\nADD CONSTRAINT \"Comment_torrentId_fkey\"\nFOREIGN KEY (\"torrentId\")\nREFERENCES \"public\".\"Torrent\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Comment_torrentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Comment_torrentId_fkey",
+          "public",
+          "\"public\".\"Comment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Comment.Comment_requestId_fkey",
+    "label": "Add foreign key \"Comment_requestId_fkey\" on \"Comment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Comment_requestId_fkey",
+        "table": "Comment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Comment_requestId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Comment_requestId_fkey",
+          "public",
+          "\"public\".\"Comment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Comment_requestId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Comment\"\nADD CONSTRAINT \"Comment_requestId_fkey\"\nFOREIGN KEY (\"requestId\")\nREFERENCES \"public\".\"Request\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Comment_requestId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Comment_requestId_fkey",
+          "public",
+          "\"public\".\"Comment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Comment.Comment_userId_fkey",
+    "label": "Add foreign key \"Comment_userId_fkey\" on \"Comment\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Comment_userId_fkey",
+        "table": "Comment"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Comment_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Comment_userId_fkey",
+          "public",
+          "\"public\".\"Comment\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Comment_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Comment\"\nADD CONSTRAINT \"Comment_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Comment_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Comment_userId_fkey",
+          "public",
+          "\"public\".\"Comment\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.CommentVote.CommentVote_userId_fkey",
+    "label": "Add foreign key \"CommentVote_userId_fkey\" on \"CommentVote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "CommentVote_userId_fkey",
+        "table": "CommentVote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"CommentVote_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CommentVote_userId_fkey",
+          "public",
+          "\"public\".\"CommentVote\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"CommentVote_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"CommentVote\"\nADD CONSTRAINT \"CommentVote_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"CommentVote_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CommentVote_userId_fkey",
+          "public",
+          "\"public\".\"CommentVote\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.CommentVote.CommentVote_commentId_fkey",
+    "label": "Add foreign key \"CommentVote_commentId_fkey\" on \"CommentVote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "CommentVote_commentId_fkey",
+        "table": "CommentVote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"CommentVote_commentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CommentVote_commentId_fkey",
+          "public",
+          "\"public\".\"CommentVote\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"CommentVote_commentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"CommentVote\"\nADD CONSTRAINT \"CommentVote_commentId_fkey\"\nFOREIGN KEY (\"commentId\")\nREFERENCES \"public\".\"Comment\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"CommentVote_commentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "CommentVote_commentId_fkey",
+          "public",
+          "\"public\".\"CommentVote\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.DownloadToken.DownloadToken_userId_fkey",
+    "label": "Add foreign key \"DownloadToken_userId_fkey\" on \"DownloadToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "DownloadToken_userId_fkey",
+        "table": "DownloadToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"DownloadToken_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DownloadToken_userId_fkey",
+          "public",
+          "\"public\".\"DownloadToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"DownloadToken_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"DownloadToken\"\nADD CONSTRAINT \"DownloadToken_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"DownloadToken_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DownloadToken_userId_fkey",
+          "public",
+          "\"public\".\"DownloadToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.DownloadToken.DownloadToken_torrentId_fkey",
+    "label": "Add foreign key \"DownloadToken_torrentId_fkey\" on \"DownloadToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "DownloadToken_torrentId_fkey",
+        "table": "DownloadToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"DownloadToken_torrentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DownloadToken_torrentId_fkey",
+          "public",
+          "\"public\".\"DownloadToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"DownloadToken_torrentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"DownloadToken\"\nADD CONSTRAINT \"DownloadToken_torrentId_fkey\"\nFOREIGN KEY (\"torrentId\")\nREFERENCES \"public\".\"Torrent\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"DownloadToken_torrentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "DownloadToken_torrentId_fkey",
+          "public",
+          "\"public\".\"DownloadToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.EmailVerificationToken.EmailVerificationToken_userId_fkey",
+    "label": "Add foreign key \"EmailVerificationToken_userId_fkey\" on \"EmailVerificationToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "EmailVerificationToken_userId_fkey",
+        "table": "EmailVerificationToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"EmailVerificationToken_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "EmailVerificationToken_userId_fkey",
+          "public",
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"EmailVerificationToken_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"EmailVerificationToken\"\nADD CONSTRAINT \"EmailVerificationToken_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"EmailVerificationToken_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "EmailVerificationToken_userId_fkey",
+          "public",
+          "\"public\".\"EmailVerificationToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.HitAndRun.HitAndRun_userId_fkey",
+    "label": "Add foreign key \"HitAndRun_userId_fkey\" on \"HitAndRun\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "HitAndRun_userId_fkey",
+        "table": "HitAndRun"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"HitAndRun_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "HitAndRun_userId_fkey",
+          "public",
+          "\"public\".\"HitAndRun\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"HitAndRun_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"HitAndRun\"\nADD CONSTRAINT \"HitAndRun_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"HitAndRun_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "HitAndRun_userId_fkey",
+          "public",
+          "\"public\".\"HitAndRun\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.HitAndRun.HitAndRun_torrentId_fkey",
+    "label": "Add foreign key \"HitAndRun_torrentId_fkey\" on \"HitAndRun\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "HitAndRun_torrentId_fkey",
+        "table": "HitAndRun"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"HitAndRun_torrentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "HitAndRun_torrentId_fkey",
+          "public",
+          "\"public\".\"HitAndRun\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"HitAndRun_torrentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"HitAndRun\"\nADD CONSTRAINT \"HitAndRun_torrentId_fkey\"\nFOREIGN KEY (\"torrentId\")\nREFERENCES \"public\".\"Torrent\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"HitAndRun_torrentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "HitAndRun_torrentId_fkey",
+          "public",
+          "\"public\".\"HitAndRun\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Invite.Invite_createdById_fkey",
+    "label": "Add foreign key \"Invite_createdById_fkey\" on \"Invite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Invite_createdById_fkey",
+        "table": "Invite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Invite_createdById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invite_createdById_fkey",
+          "public",
+          "\"public\".\"Invite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Invite_createdById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Invite\"\nADD CONSTRAINT \"Invite_createdById_fkey\"\nFOREIGN KEY (\"createdById\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Invite_createdById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invite_createdById_fkey",
+          "public",
+          "\"public\".\"Invite\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Invite.Invite_usedById_fkey",
+    "label": "Add foreign key \"Invite_usedById_fkey\" on \"Invite\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Invite_usedById_fkey",
+        "table": "Invite"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Invite_usedById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invite_usedById_fkey",
+          "public",
+          "\"public\".\"Invite\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Invite_usedById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Invite\"\nADD CONSTRAINT \"Invite_usedById_fkey\"\nFOREIGN KEY (\"usedById\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Invite_usedById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Invite_usedById_fkey",
+          "public",
+          "\"public\".\"Invite\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Notification.Notification_userId_fkey",
+    "label": "Add foreign key \"Notification_userId_fkey\" on \"Notification\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Notification_userId_fkey",
+        "table": "Notification"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Notification_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Notification_userId_fkey",
+          "public",
+          "\"public\".\"Notification\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Notification_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Notification\"\nADD CONSTRAINT \"Notification_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Notification_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Notification_userId_fkey",
+          "public",
+          "\"public\".\"Notification\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Notification.Notification_relatedBanId_fkey",
+    "label": "Add foreign key \"Notification_relatedBanId_fkey\" on \"Notification\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Notification_relatedBanId_fkey",
+        "table": "Notification"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Notification_relatedBanId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Notification_relatedBanId_fkey",
+          "public",
+          "\"public\".\"Notification\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Notification_relatedBanId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Notification\"\nADD CONSTRAINT \"Notification_relatedBanId_fkey\"\nFOREIGN KEY (\"relatedBanId\")\nREFERENCES \"public\".\"PeerBan\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Notification_relatedBanId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Notification_relatedBanId_fkey",
+          "public",
+          "\"public\".\"Notification\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Notification.Notification_adminId_fkey",
+    "label": "Add foreign key \"Notification_adminId_fkey\" on \"Notification\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Notification_adminId_fkey",
+        "table": "Notification"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Notification_adminId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Notification_adminId_fkey",
+          "public",
+          "\"public\".\"Notification\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Notification_adminId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Notification\"\nADD CONSTRAINT \"Notification_adminId_fkey\"\nFOREIGN KEY (\"adminId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Notification_adminId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Notification_adminId_fkey",
+          "public",
+          "\"public\".\"Notification\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.PasswordResetToken.PasswordResetToken_userId_fkey",
+    "label": "Add foreign key \"PasswordResetToken_userId_fkey\" on \"PasswordResetToken\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "PasswordResetToken_userId_fkey",
+        "table": "PasswordResetToken"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"PasswordResetToken_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PasswordResetToken_userId_fkey",
+          "public",
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"PasswordResetToken_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"PasswordResetToken\"\nADD CONSTRAINT \"PasswordResetToken_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"PasswordResetToken_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PasswordResetToken_userId_fkey",
+          "public",
+          "\"public\".\"PasswordResetToken\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.PeerBan.PeerBan_bannedById_fkey",
+    "label": "Add foreign key \"PeerBan_bannedById_fkey\" on \"PeerBan\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "PeerBan_bannedById_fkey",
+        "table": "PeerBan"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"PeerBan_bannedById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PeerBan_bannedById_fkey",
+          "public",
+          "\"public\".\"PeerBan\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"PeerBan_bannedById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"PeerBan\"\nADD CONSTRAINT \"PeerBan_bannedById_fkey\"\nFOREIGN KEY (\"bannedById\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"PeerBan_bannedById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "PeerBan_bannedById_fkey",
+          "public",
+          "\"public\".\"PeerBan\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Request.Request_userId_fkey",
+    "label": "Add foreign key \"Request_userId_fkey\" on \"Request\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Request_userId_fkey",
+        "table": "Request"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Request_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Request_userId_fkey",
+          "public",
+          "\"public\".\"Request\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Request_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Request\"\nADD CONSTRAINT \"Request_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Request_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Request_userId_fkey",
+          "public",
+          "\"public\".\"Request\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Request.Request_filledById_fkey",
+    "label": "Add foreign key \"Request_filledById_fkey\" on \"Request\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Request_filledById_fkey",
+        "table": "Request"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Request_filledById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Request_filledById_fkey",
+          "public",
+          "\"public\".\"Request\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Request_filledById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Request\"\nADD CONSTRAINT \"Request_filledById_fkey\"\nFOREIGN KEY (\"filledById\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Request_filledById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Request_filledById_fkey",
+          "public",
+          "\"public\".\"Request\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Request.Request_filledTorrentId_fkey",
+    "label": "Add foreign key \"Request_filledTorrentId_fkey\" on \"Request\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Request_filledTorrentId_fkey",
+        "table": "Request"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Request_filledTorrentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Request_filledTorrentId_fkey",
+          "public",
+          "\"public\".\"Request\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Request_filledTorrentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Request\"\nADD CONSTRAINT \"Request_filledTorrentId_fkey\"\nFOREIGN KEY (\"filledTorrentId\")\nREFERENCES \"public\".\"Torrent\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Request_filledTorrentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Request_filledTorrentId_fkey",
+          "public",
+          "\"public\".\"Request\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Request.Request_categoryId_fkey",
+    "label": "Add foreign key \"Request_categoryId_fkey\" on \"Request\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Request_categoryId_fkey",
+        "table": "Request"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Request_categoryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Request_categoryId_fkey",
+          "public",
+          "\"public\".\"Request\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Request_categoryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Request\"\nADD CONSTRAINT \"Request_categoryId_fkey\"\nFOREIGN KEY (\"categoryId\")\nREFERENCES \"public\".\"Category\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Request_categoryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Request_categoryId_fkey",
+          "public",
+          "\"public\".\"Request\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Torrent.Torrent_uploaderId_fkey",
+    "label": "Add foreign key \"Torrent_uploaderId_fkey\" on \"Torrent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Torrent_uploaderId_fkey",
+        "table": "Torrent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Torrent_uploaderId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Torrent_uploaderId_fkey",
+          "public",
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Torrent_uploaderId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Torrent\"\nADD CONSTRAINT \"Torrent_uploaderId_fkey\"\nFOREIGN KEY (\"uploaderId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Torrent_uploaderId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Torrent_uploaderId_fkey",
+          "public",
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Torrent.Torrent_rejectedById_fkey",
+    "label": "Add foreign key \"Torrent_rejectedById_fkey\" on \"Torrent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Torrent_rejectedById_fkey",
+        "table": "Torrent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Torrent_rejectedById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Torrent_rejectedById_fkey",
+          "public",
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Torrent_rejectedById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Torrent\"\nADD CONSTRAINT \"Torrent_rejectedById_fkey\"\nFOREIGN KEY (\"rejectedById\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Torrent_rejectedById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Torrent_rejectedById_fkey",
+          "public",
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Torrent.Torrent_categoryId_fkey",
+    "label": "Add foreign key \"Torrent_categoryId_fkey\" on \"Torrent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Torrent_categoryId_fkey",
+        "table": "Torrent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Torrent_categoryId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Torrent_categoryId_fkey",
+          "public",
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Torrent_categoryId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Torrent\"\nADD CONSTRAINT \"Torrent_categoryId_fkey\"\nFOREIGN KEY (\"categoryId\")\nREFERENCES \"public\".\"Category\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Torrent_categoryId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Torrent_categoryId_fkey",
+          "public",
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.Torrent.Torrent_posterFileId_fkey",
+    "label": "Add foreign key \"Torrent_posterFileId_fkey\" on \"Torrent\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "Torrent_posterFileId_fkey",
+        "table": "Torrent"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"Torrent_posterFileId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Torrent_posterFileId_fkey",
+          "public",
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"Torrent_posterFileId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"Torrent\"\nADD CONSTRAINT \"Torrent_posterFileId_fkey\"\nFOREIGN KEY (\"posterFileId\")\nREFERENCES \"public\".\"UploadedFile\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"Torrent_posterFileId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "Torrent_posterFileId_fkey",
+          "public",
+          "\"public\".\"Torrent\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TorrentVote.TorrentVote_userId_fkey",
+    "label": "Add foreign key \"TorrentVote_userId_fkey\" on \"TorrentVote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TorrentVote_userId_fkey",
+        "table": "TorrentVote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TorrentVote_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TorrentVote_userId_fkey",
+          "public",
+          "\"public\".\"TorrentVote\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TorrentVote_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TorrentVote\"\nADD CONSTRAINT \"TorrentVote_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TorrentVote_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TorrentVote_userId_fkey",
+          "public",
+          "\"public\".\"TorrentVote\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.TorrentVote.TorrentVote_torrentId_fkey",
+    "label": "Add foreign key \"TorrentVote_torrentId_fkey\" on \"TorrentVote\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "TorrentVote_torrentId_fkey",
+        "table": "TorrentVote"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"TorrentVote_torrentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TorrentVote_torrentId_fkey",
+          "public",
+          "\"public\".\"TorrentVote\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"TorrentVote_torrentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"TorrentVote\"\nADD CONSTRAINT \"TorrentVote_torrentId_fkey\"\nFOREIGN KEY (\"torrentId\")\nREFERENCES \"public\".\"Torrent\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"TorrentVote_torrentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "TorrentVote_torrentId_fkey",
+          "public",
+          "\"public\".\"TorrentVote\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.User.User_avatarFileId_fkey",
+    "label": "Add foreign key \"User_avatarFileId_fkey\" on \"User\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "User_avatarFileId_fkey",
+        "table": "User"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"User_avatarFileId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "User_avatarFileId_fkey",
+          "public",
+          "\"public\".\"User\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"User_avatarFileId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"User\"\nADD CONSTRAINT \"User_avatarFileId_fkey\"\nFOREIGN KEY (\"avatarFileId\")\nREFERENCES \"public\".\"UploadedFile\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"User_avatarFileId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "User_avatarFileId_fkey",
+          "public",
+          "\"public\".\"User\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.UserActivity.UserActivity_userId_fkey",
+    "label": "Add foreign key \"UserActivity_userId_fkey\" on \"UserActivity\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "UserActivity_userId_fkey",
+        "table": "UserActivity"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"UserActivity_userId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserActivity_userId_fkey",
+          "public",
+          "\"public\".\"UserActivity\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"UserActivity_userId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"UserActivity\"\nADD CONSTRAINT \"UserActivity_userId_fkey\"\nFOREIGN KEY (\"userId\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE CASCADE\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"UserActivity_userId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "UserActivity_userId_fkey",
+          "public",
+          "\"public\".\"UserActivity\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.WikiPage.WikiPage_createdById_fkey",
+    "label": "Add foreign key \"WikiPage_createdById_fkey\" on \"WikiPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "WikiPage_createdById_fkey",
+        "table": "WikiPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"WikiPage_createdById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WikiPage_createdById_fkey",
+          "public",
+          "\"public\".\"WikiPage\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"WikiPage_createdById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"WikiPage\"\nADD CONSTRAINT \"WikiPage_createdById_fkey\"\nFOREIGN KEY (\"createdById\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"WikiPage_createdById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WikiPage_createdById_fkey",
+          "public",
+          "\"public\".\"WikiPage\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.WikiPage.WikiPage_updatedById_fkey",
+    "label": "Add foreign key \"WikiPage_updatedById_fkey\" on \"WikiPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "WikiPage_updatedById_fkey",
+        "table": "WikiPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"WikiPage_updatedById_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WikiPage_updatedById_fkey",
+          "public",
+          "\"public\".\"WikiPage\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"WikiPage_updatedById_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"WikiPage\"\nADD CONSTRAINT \"WikiPage_updatedById_fkey\"\nFOREIGN KEY (\"updatedById\")\nREFERENCES \"public\".\"User\" (\"id\")\nON DELETE RESTRICT\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"WikiPage_updatedById_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WikiPage_updatedById_fkey",
+          "public",
+          "\"public\".\"WikiPage\""
+        ]
+      }
+    ]
+  },
+  {
+    "id": "foreignKey.WikiPage.WikiPage_parentId_fkey",
+    "label": "Add foreign key \"WikiPage_parentId_fkey\" on \"WikiPage\"",
+    "operationClass": "additive",
+    "target": {
+      "id": "postgres",
+      "details": {
+        "schema": "public",
+        "objectType": "foreignKey",
+        "name": "WikiPage_parentId_fkey",
+        "table": "WikiPage"
+      }
+    },
+    "precheck": [
+      {
+        "description": "ensure FK \"WikiPage_parentId_fkey\" does not exist",
+        "sql": "SELECT NOT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WikiPage_parentId_fkey",
+          "public",
+          "\"public\".\"WikiPage\""
+        ]
+      }
+    ],
+    "execute": [
+      {
+        "description": "add FK \"WikiPage_parentId_fkey\"",
+        "sql": "ALTER TABLE \"public\".\"WikiPage\"\nADD CONSTRAINT \"WikiPage_parentId_fkey\"\nFOREIGN KEY (\"parentId\")\nREFERENCES \"public\".\"WikiPage\" (\"id\")\nON DELETE SET NULL\nON UPDATE CASCADE"
+      }
+    ],
+    "postcheck": [
+      {
+        "description": "verify FK \"WikiPage_parentId_fkey\" exists",
+        "sql": "SELECT EXISTS (SELECT 1 AS \"one\" FROM \"pg_constraint\" AS \"c\" INNER JOIN \"pg_namespace\" AS \"n\" ON \"n\".\"oid\" = \"c\".\"connamespace\" WHERE (\"c\".\"conname\" = $1 AND \"n\".\"nspname\" = $2 AND \"c\".\"conrelid\" = to_regclass($3))) AS \"result\"",
+        "params": [
+          "WikiPage_parentId_fkey",
+          "public",
+          "\"public\".\"WikiPage\""
+        ]
+      }
+    ]
+  }
+]

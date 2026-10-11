@@ -93,11 +93,7 @@ cd Obsidian
 #### Backend (API)
 ```bash
 cd api
-npm install
-# or
-yarn install
-# or
-bun install
+pnpm install
 ```
 
 #### Frontend (Client)
@@ -145,15 +141,16 @@ S3_SECRET_ACCESS_KEY="your_secret_key"
 ```
 
 #### Run Database Migrations
+The API uses Prisma ORM 8. Migrations live in `api/migrations/` and are applied with:
 ```bash
 cd api
-npx prisma migrate dev
-npx prisma generate
+pnpm migration:apply   # prisma db migrate --advance-ref db
+pnpm db:verify         # optional: check the schema matches the contract
 ```
 
 #### Seed Initial Data
 ```bash
-npm run prisma:seed
+pnpm seed
 ```
 
 ### 4. Development Setup
@@ -178,9 +175,9 @@ The client will start on `http://localhost:3000`
 The application uses Prisma for database management. Key configuration options:
 
 - **Connection**: Configured via `DATABASE_URL` environment variable
-- **Migrations**: Located in `api/prisma/migrations/`
-- **Schema**: Defined in `api/prisma/schema.prisma`
-- **Seeding**: Initial data setup in `api/prisma/seed.ts`
+- **Migrations**: Located in `api/migrations/` (Prisma ORM 8 migration graph)
+- **Schema**: Defined in `api/prisma8/contract.prisma`; run `pnpm contract:emit` after editing it
+- **Seeding**: Initial data setup in `api/src/seed.ts`
 
 ### Application Settings
 Core settings can be configured through the admin panel or database:
@@ -334,9 +331,10 @@ function MyComponent() {
 
 ### Production Build
 ```bash
-# Build API
+# Build API: a single-file bundle (build/index.mjs + build/seed.mjs) that
+# runs with plain `node`, no node_modules required
 cd api
-npm run build
+pnpm bundle
 
 # Build Client: a static export in client/out/ (no Node server needed).
 # NEXT_PUBLIC_API_URL is inlined at build time and must be reachable from the browser.
@@ -364,16 +362,30 @@ Ensure all required environment variables are set for production:
 - CORS origins
 
 ### Database Migration
+Fresh database:
 ```bash
 cd api
-npx prisma migrate deploy
+pnpm migration:apply
 ```
+
+Upgrading a database created by the old Prisma 7 migrations (`api/prisma/migrations`):
+its schema already matches the v8 baseline, so sign it once instead of migrating,
+then verify. Running `migration:apply` on an unsigned existing database fails with
+`type "RegMode" already exists`.
+```bash
+cd api
+pnpm db:sign      # record the v8 marker on the existing schema
+pnpm db:verify    # must report "Database marker and schema match contract"
+pnpm migration:apply   # from now on, applies only newer migrations
+```
+
+The API stores timestamps as UTC and pins the process timezone to UTC itself.
 
 ### Process Management
 Use PM2 or similar process manager for production:
 ```bash
 npm install -g pm2
-pm2 start api/dist/index.js --name "obsidian-api"
+pm2 start api/build/index.mjs --name "obsidian-api"
 ```
 The client needs no process manager; it is served as static files (see above).
 

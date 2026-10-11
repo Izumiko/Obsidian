@@ -1,0 +1,21 @@
+services:
+  obsidian-api:
+    ports:
+      # host:container - the app listens on 3001 inside the container
+      - '8888:3001'
+    volumes:
+      # Change the next line to your location of storage
+      - ./uploads:/app/uploads
+    image: 'izumiko/obsidian-api:latest'
+    restart: always
+
+  # One-shot image that only applies database migrations.
+  # Build it from the `migrate` target:
+  #   docker build --target migrate -t izumiko/obsidian-api-migrate:latest .
+  # A database created by the old Prisma 7 migrations must be signed once first:
+  #   docker run --rm -e DATABASE_URL=... izumiko/obsidian-api-migrate:latest pnpm db:sign
+  obsidian-api-migrate:
+    image: 'izumiko/obsidian-api-migrate:latest'
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    restart: 'no'

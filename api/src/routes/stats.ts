@@ -1,5 +1,5 @@
 import { FastifyInstance } from 'fastify';
-import { prisma } from '../lib/prisma.js';
+import { db } from '../lib/prisma.js';
 
 /**
  * Register statistics routes
@@ -16,16 +16,17 @@ export async function registerStatsRoutes(app: FastifyInstance) {
   // Get site statistics from database
   app.get('/stats', async (request, reply) => {
     try {
-      const [usersCount, torrentsCount, completedDownloads, announcesAgg] = await Promise.all([
-        prisma.user.count(),
-        prisma.torrent.count(),
-        prisma.announce.count({ where: { event: 'completed' } }),
-        prisma.announce.aggregate({
-          _sum: { uploaded: true },
-        }),
+      const [usersAgg, torrentsAgg, completedAgg, announcesAgg] = await Promise.all([
+        db.orm.public.User.aggregate((a) => ({ n: a.count() })),
+        db.orm.public.Torrent.aggregate((a) => ({ n: a.count() })),
+        db.orm.public.Announce.where({ event: 'completed' }).aggregate((a) => ({ n: a.count() })),
+        db.orm.public.Announce.aggregate((a) => ({ total: a.sum('uploaded') })),
       ]);
 
-      const totalUploaded = Number(announcesAgg._sum.uploaded || 0);
+      const usersCount = usersAgg.n;
+      const torrentsCount = torrentsAgg.n;
+      const completedDownloads = completedAgg.n;
+      const totalUploaded = Number(announcesAgg.total || 0);
 
       // Format bytes to human readable string; return "0 megabytes" if zero
       const formatBytes = (bytes: number): string => {
