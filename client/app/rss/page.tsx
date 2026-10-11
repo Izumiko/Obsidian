@@ -1,7 +1,8 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import DashboardWrapper from '../dashboard/components/DashboardWrapper';
-import { serverT, getPreferredLanguage } from '../lib/server-i18n';
+import { useI18n } from '../hooks/useI18n';
 import RssClient from './components/RssClient';
 
 // Loading skeleton component
@@ -30,13 +31,12 @@ function RssSkeleton() {
   );
 }
 
-export default async function RssPage() {
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+export default function RssPage() {
+  const { t } = useI18n();
 
   const translations = {
-    title: serverT('sidebar.nav.rss', language),
-    description: serverT('rss.description', language),
+    title: t('sidebar.nav.rss'),
+    description: t('rss.description'),
   };
 
   return (

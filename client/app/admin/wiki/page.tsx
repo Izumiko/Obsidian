@@ -1,10 +1,10 @@
+'use client';
+
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import AdminDashboardWrapper from '../components/AdminDashboardWrapper';
-import { getPreferredLanguage, serverT } from '@/app/lib/server-i18n';
 import WikiClient from './WikiClient';
 import { LanguageSelector } from '@/app/components/LanguageSelector';
-import { LanguageSync } from '@/app/components/LanguageSync';
+import { useI18n } from '@/app/hooks/useI18n';
 
 function WikiSkeleton() {
   return (
@@ -25,62 +25,60 @@ function WikiSkeleton() {
   );
 }
 
-export default async function AdminWikiPage() {
-  const hdrs = await headers();
-  const language = await getPreferredLanguage(hdrs);
+export default function AdminWikiPage() {
+  const { t, language } = useI18n();
 
   const translations = {
-    title: serverT('admin.wiki.title', language),
-    description: serverT('admin.wiki.description', language),
-    addNew: serverT('admin.wiki.addNew', language),
-    addWikiPage: serverT('admin.wiki.addWikiPage', language),
-    editWikiPage: serverT('admin.wiki.editWikiPage', language),
-    list: serverT('admin.wiki.list', language),
-    slug: serverT('admin.wiki.slug', language),
-    titleField: serverT('admin.wiki.titleField', language),
-    content: serverT('admin.wiki.content', language),
-    parentPage: serverT('admin.wiki.parentPage', language),
-    noParent: serverT('admin.wiki.noParent', language),
-    locked: serverT('admin.wiki.locked', language),
-    visible: serverT('admin.wiki.visible', language),
-    createdBy: serverT('admin.wiki.createdBy', language),
-    updatedBy: serverT('admin.wiki.updatedBy', language),
-    createdAt: serverT('admin.wiki.createdAt', language),
-    updatedAt: serverT('admin.wiki.updatedAt', language),
-    create: serverT('admin.wiki.create', language),
-    update: serverT('admin.wiki.update', language),
-    edit: serverT('admin.wiki.edit', language),
-    delete: serverT('admin.wiki.delete', language),
-    lock: serverT('admin.wiki.lock', language),
-    unlock: serverT('admin.wiki.unlock', language),
-    show: serverT('admin.wiki.show', language),
-    hide: serverT('admin.wiki.hide', language),
-    cancel: serverT('admin.wiki.cancel', language),
-    slugRequired: serverT('admin.wiki.slugRequired', language),
-    titleRequired: serverT('admin.wiki.titleRequired', language),
-    contentRequired: serverT('admin.wiki.contentRequired', language),
-    confirmDelete: serverT('admin.wiki.confirmDelete', language),
-    noWikiPages: serverT('admin.wiki.noWikiPages', language),
-    created: serverT('admin.wiki.created', language),
-    updated: serverT('admin.wiki.updated', language),
-    deleted: serverT('admin.wiki.deleted', language),
-    lockedSuccess: serverT('admin.wiki.lockedSuccess', language),
-    unlockedSuccess: serverT('admin.wiki.unlockedSuccess', language),
-    shownSuccess: serverT('admin.wiki.shownSuccess', language),
-    hiddenSuccess: serverT('admin.wiki.hiddenSuccess', language),
-    errorLoading: serverT('admin.wiki.errorLoading', language),
-    errorCreating: serverT('admin.wiki.errorCreating', language),
-    errorUpdating: serverT('admin.wiki.errorUpdating', language),
-    errorDeleting: serverT('admin.wiki.errorDeleting', language),
-    errorLocking: serverT('admin.wiki.errorLocking', language),
-    errorUnlocking: serverT('admin.wiki.errorUnlocking', language),
-    errorShowing: serverT('admin.wiki.errorShowing', language),
-    errorHiding: serverT('admin.wiki.errorHiding', language),
+    title: t('admin.wiki.title'),
+    description: t('admin.wiki.description'),
+    addNew: t('admin.wiki.addNew'),
+    addWikiPage: t('admin.wiki.addWikiPage'),
+    editWikiPage: t('admin.wiki.editWikiPage'),
+    list: t('admin.wiki.list'),
+    slug: t('admin.wiki.slug'),
+    titleField: t('admin.wiki.titleField'),
+    content: t('admin.wiki.content'),
+    parentPage: t('admin.wiki.parentPage'),
+    noParent: t('admin.wiki.noParent'),
+    locked: t('admin.wiki.locked'),
+    visible: t('admin.wiki.visible'),
+    createdBy: t('admin.wiki.createdBy'),
+    updatedBy: t('admin.wiki.updatedBy'),
+    createdAt: t('admin.wiki.createdAt'),
+    updatedAt: t('admin.wiki.updatedAt'),
+    create: t('admin.wiki.create'),
+    update: t('admin.wiki.update'),
+    edit: t('admin.wiki.edit'),
+    delete: t('admin.wiki.delete'),
+    lock: t('admin.wiki.lock'),
+    unlock: t('admin.wiki.unlock'),
+    show: t('admin.wiki.show'),
+    hide: t('admin.wiki.hide'),
+    cancel: t('admin.wiki.cancel'),
+    slugRequired: t('admin.wiki.slugRequired'),
+    titleRequired: t('admin.wiki.titleRequired'),
+    contentRequired: t('admin.wiki.contentRequired'),
+    confirmDelete: t('admin.wiki.confirmDelete'),
+    noWikiPages: t('admin.wiki.noWikiPages'),
+    created: t('admin.wiki.created'),
+    updated: t('admin.wiki.updated'),
+    deleted: t('admin.wiki.deleted'),
+    lockedSuccess: t('admin.wiki.lockedSuccess'),
+    unlockedSuccess: t('admin.wiki.unlockedSuccess'),
+    shownSuccess: t('admin.wiki.shownSuccess'),
+    hiddenSuccess: t('admin.wiki.hiddenSuccess'),
+    errorLoading: t('admin.wiki.errorLoading'),
+    errorCreating: t('admin.wiki.errorCreating'),
+    errorUpdating: t('admin.wiki.errorUpdating'),
+    errorDeleting: t('admin.wiki.errorDeleting'),
+    errorLocking: t('admin.wiki.errorLocking'),
+    errorUnlocking: t('admin.wiki.errorUnlocking'),
+    errorShowing: t('admin.wiki.errorShowing'),
+    errorHiding: t('admin.wiki.errorHiding'),
   };
 
   return (
     <AdminDashboardWrapper>
-      <LanguageSync serverLanguage={language} />
       <div className="fixed bottom-4 left-4 z-50">
         <LanguageSelector currentLanguage={language} />
       </div>

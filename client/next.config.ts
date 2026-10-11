@@ -32,6 +32,8 @@ function createRemotePattern(url: string, pathname: string = '/files/**'): Remot
 }
 
 const nextConfig: NextConfig = {
+  output: 'export',
+  trailingSlash: true,
   images: {
     remotePatterns: [
       // Local development patterns
@@ -71,7 +73,7 @@ const nextConfig: NextConfig = {
     ],
     // Disable image optimization for development and when using external domains
     // Also disable in production if having issues with external image optimization
-    unoptimized: process.env.NODE_ENV === 'development' || process.env.DISABLE_IMAGE_OPTIMIZATION === 'true',
+    unoptimized: true,
   },
 };
 

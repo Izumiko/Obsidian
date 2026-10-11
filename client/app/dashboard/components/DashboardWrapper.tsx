@@ -1,60 +1,47 @@
-import { ReactNode, Suspense } from 'react';
-import { headers } from 'next/headers';
-import { serverT, getPreferredLanguage } from '@/app/lib/server-i18n';
+'use client';
+import { ReactNode, Suspense, useEffect, useState } from 'react';
+import { useI18n } from '@/app/hooks/useI18n';
 import DashboardHeader from './DashboardHeader';
 import DashboardSidebar from './DashboardSidebar';
 import { API_BASE_URL } from '@/lib/api';
 import { MobileSidebarProvider } from '../context/MobileSidebarContext';
 
-interface DashboardWrapperProps {
-  children: ReactNode;
-}
+export default function DashboardWrapper({ children }: { children: ReactNode }) {
+  const { t, language } = useI18n();
+  const [brandingName, setBrandingName] = useState('Obsidian Tracker');
 
-export default async function DashboardWrapper({ children }: DashboardWrapperProps) {
-  const headersList = await headers();
-  const language = await getPreferredLanguage(headersList);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/config/branding`)
+      .then(r => r.json())
+      .then(b => { if (!cancelled && b?.brandingName) setBrandingName(b.brandingName); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const navItems = [
-    { href: '/dashboard', label: serverT('sidebar.nav.home', language), icon: 'Home' },
-    { href: '/categories', label: serverT('sidebar.nav.categories', language), icon: 'ListUl' },
-    { href: '/requests', label: serverT('sidebar.nav.requests', language), icon: 'HelpCircle' },
-    { href: '/announcements', label: serverT('sidebar.nav.announcements', language), icon: 'News' },
-    { href: '/wiki', label: serverT('sidebar.nav.wiki', language), icon: 'BookOpen' },
-    { href: '/rss', label: serverT('sidebar.nav.rss', language), icon: 'Rss' },
-    { href: '/bookmarks', label: serverT('sidebar.nav.bookmarks', language), icon: 'Bookmark' },
+    { href: '/dashboard', label: t('sidebar.nav.home'), icon: 'Home' },
+    { href: '/categories', label: t('sidebar.nav.categories'), icon: 'ListUl' },
+    { href: '/requests', label: t('sidebar.nav.requests'), icon: 'HelpCircle' },
+    { href: '/announcements', label: t('sidebar.nav.announcements'), icon: 'News' },
+    { href: '/wiki', label: t('sidebar.nav.wiki'), icon: 'BookOpen' },
+    { href: '/rss', label: t('sidebar.nav.rss'), icon: 'Rss' },
+    { href: '/bookmarks', label: t('sidebar.nav.bookmarks'), icon: 'Bookmark' },
   ];
-
-  // Load branding from API
-  let brandingName = 'Obsidian Tracker';
-  try {
-    const response = await fetch(`${API_BASE_URL}/config/branding`);
-    const branding = await response.json();
-    brandingName = branding.brandingName || brandingName;
-  } catch {}
 
   return (
     <MobileSidebarProvider>
       <div className="h-screen bg-background overflow-hidden">
-        <Suspense fallback={
-          <div className="h-16 bg-surface border-b border-border fixed top-0 left-0 right-0 z-50" />
-        }>
+        <Suspense fallback={<div className="h-16 bg-surface border-b border-border fixed top-0 left-0 right-0 z-50" />}>
           <DashboardHeader language={language} brandingName={brandingName} />
         </Suspense>
-
-        <Suspense fallback={
-          <div className="w-64 bg-surface border-r border-border h-[calc(100vh-4rem)] fixed left-0 top-16 z-20" />
-        }>
+        <Suspense fallback={<div className="w-64 bg-surface border-r border-border h-[calc(100vh-4rem)] fixed left-0 top-16 z-20" />}>
           <DashboardSidebar navItems={navItems} brandingName={brandingName} currentLanguage={language} />
         </Suspense>
-
         <main className="h-full lg:ml-64 pt-16 overflow-y-auto">
-          <div className="p-4 sm:p-6">
-            {children}
-          </div>
+          <div className="p-4 sm:p-6">{children}</div>
         </main>
       </div>
     </MobileSidebarProvider>
   );
 }
-
-

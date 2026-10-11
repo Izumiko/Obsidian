@@ -1,3 +1,5 @@
+'use client';
+
 import { Suspense } from 'react';
 import AdminDashboardWrapper from '../components/AdminDashboardWrapper';
 import RanksClient from './RanksClient';
