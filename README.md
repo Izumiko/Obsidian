@@ -57,7 +57,7 @@ A modern, feature-rich BitTorrent tracker built with Next.js, Fastify, and Postg
 - **Rate Limiting**: Built-in rate limiting for API protection
 
 ### Frontend (Client)
-- **Framework**: Next.js 15 with App Router
+- **Framework**: Next.js 15 with App Router, exported as a fully static site (`output: 'export'`)
 - **UI Library**: Tailwind CSS with custom components
 - **State Management**: SWR for server state, React hooks for local state
 - **Internationalization**: Custom i18n implementation with cookie persistence
@@ -338,9 +338,21 @@ function MyComponent() {
 cd api
 npm run build
 
-# Build Client
+# Build Client: a static export in client/out/ (no Node server needed).
+# NEXT_PUBLIC_API_URL is inlined at build time and must be reachable from the browser.
 cd client
-npm run build
+NEXT_PUBLIC_API_URL=https://api.example.com npm run build
+```
+
+### Serving the Client
+Serve `client/out/` with any static web server. Dynamic routes (torrents, users,
+wiki pages, announcements, invite codes, categories) are exported as one placeholder
+shell each and need a fallback rule; `client/nginx.static.conf.example` has a ready-made
+nginx config. Alternatively build the bundled image (alpine + nginx):
+```bash
+cd client
+docker build --build-arg NEXT_PUBLIC_API_URL=https://api.example.com -t obsidian-client .
+docker run -p 3000:80 obsidian-client
 ```
 
 ### Environment Variables
@@ -362,8 +374,8 @@ Use PM2 or similar process manager for production:
 ```bash
 npm install -g pm2
 pm2 start api/dist/index.js --name "obsidian-api"
-pm2 start client/server.js --name "obsidian-client"
 ```
+The client needs no process manager; it is served as static files (see above).
 
 ## 🤝 Contributing
 
