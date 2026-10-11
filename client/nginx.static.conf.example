@@ -18,6 +18,11 @@ server {
     index index.html;
     error_page 404 /404.html;
 
+    # Emit relative Location headers for the trailing-slash redirects
+    # (/dashboard -> /dashboard/) so they keep the client's host and port
+    # when nginx sits behind a port mapping or reverse proxy.
+    absolute_redirect off;
+
     # Hashed Next.js build assets are immutable.
     location /_next/static/ {
         try_files $uri =404;
@@ -50,7 +55,7 @@ server {
         try_files $uri $uri/ /auth/signup/_placeholder/index.html;
     }
 
-    location ~ ^/category/[^/]+/torrents/ {
+    location ~ ^/category/[^/]+/torrents(/|$) {
         try_files $uri $uri/ /category/_placeholder/torrents/index.html;
     }
 
