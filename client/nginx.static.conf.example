@@ -35,27 +35,48 @@ server {
     }
 
     # --- Dynamic routes: real path first, else the placeholder shell ---
+    # The nested .txt rule serves the placeholder's RSC payload for client-side
+    # navigations (/torrent/<id>/index.txt); without it Next gets HTML back and
+    # falls back to a full page load.
     location /torrent/ {
+        location ~ \.txt$ {
+            try_files $uri /torrent/_placeholder/index.txt;
+        }
         try_files $uri $uri/ /torrent/_placeholder/index.html;
     }
 
     location /user/ {
+        location ~ \.txt$ {
+            try_files $uri /user/_placeholder/index.txt;
+        }
         try_files $uri $uri/ /user/_placeholder/index.html;
     }
 
     location /wiki/ {
+        location ~ \.txt$ {
+            try_files $uri /wiki/_placeholder/index.txt;
+        }
         try_files $uri $uri/ /wiki/_placeholder/index.html;
     }
 
     location /announcements/ {
+        location ~ \.txt$ {
+            try_files $uri /announcements/_placeholder/index.txt;
+        }
         try_files $uri $uri/ /announcements/_placeholder/index.html;
     }
 
     location /auth/signup/ {
+        location ~ \.txt$ {
+            try_files $uri /auth/signup/_placeholder/index.txt;
+        }
         try_files $uri $uri/ /auth/signup/_placeholder/index.html;
     }
 
     location ~ ^/category/[^/]+/torrents(/|$) {
+        location ~ \.txt$ {
+            try_files $uri /category/_placeholder/torrents/index.txt;
+        }
         try_files $uri $uri/ /category/_placeholder/torrents/index.html;
     }
 
