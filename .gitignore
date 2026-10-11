@@ -42,3 +42,7 @@ next-env.d.ts
 future-features.md
 client/bun.lockb
 /NexusTrackerV2
+
+# AI agent tooling artifacts
+.opencode/
+docs/superpowers/
